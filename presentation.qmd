@@ -1,0 +1,387 @@
+---
+title: "Developments in LLM/RAG"
+author: "Ryan Singh"
+title-slide-attributes:
+  data-background-image: "pictures/star_trail.jpg"
+  data-background-size: cover
+  data-background-opacity: "0.35"
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    transition: fade
+    transition-speed: fast
+    slide-number: true
+    hash: true
+    hash-type: number
+    center: false
+    code-block-height: 450px
+    highlight-style: github
+    footer: "Ryan Singh · Developments in LLM/RAG"
+---
+
+# Agenda {.agenda-slide}
+
+1.  LLM Foundations
+2.  RAG (Retrieval-Augmented Generation)
+3.  LLM Evals
+4.  LLM Agents
+5.  LLM Apps
+6.  Looking Ahead
+
+# LLM Foundations {.section-slide background-image="pictures/nyc_wtc.jpg" background-size="cover" background-opacity="0.35"}
+
+## What Is an LLM?
+
+-   A large language model predicts the next token given some initial tokens.
+-   Training objective: minimize next-token prediction error across massive text corpora.
+
+LLM neural networks
+
+> Text → Tokens → Token IDs → Embeddings → Transformer
+
+## LLM Arhitecture
+
+![Source: Geeks for Geeks](https://media.geeksforgeeks.org/wp-content/uploads/20251027113102226370/input_data.webp)
+
+## Tokenization
+
+-   Models do not read words directly; they read **tokens**.
+-   A token can be a full word, subword, punctuation mark, or whitespace chunk.
+-   Pricing, latency, and context limits are token-based.
+    -   1 token ≈ 0.75 words or 1.33 $\times$ words
+    -   \$2.50 / 1M tokens \| CI: \$0.25 / 1M tokens \| O: \$15.00 / 1M tokens
+-   GPT-2's vocabulary has 50,257 unique tokens. [^1]
+
+[^1]: Cho et al. (2024). *Transformer Explainer*. IEEE VIS. [poloclub.github.io/transformer-explainer](https://poloclub.github.io/transformer-explainer)
+
+## Tokenization
+
+-   Same sentence can produce different token counts across tokenizers.
+
+``` python
+text = "NotebookLM is a RAG app."
+# conceptually:
+# ["Notebook", "LM", " is", " a", " R", "AG", " app", "."]
+```
+
+## Tokenization
+
+Open AI tokenizer
+
+*https://platform.openai.com/tokenizer*
+
+<iframe src="https://tiktokenizer.vercel.app" width="100%" height="600px" style="border:none;">
+
+</iframe>
+
+## Embedding Layers
+
+-   Map discrete token IDs to continuous vector space.
+-   Capture **semantic** relationships and contextual nuances.
+
+![source: CauserWriter](https://causewriter.ai/wp-content/uploads/2023/08/image-2-1024x483.png)
+
+::: {style="font-size: 0.5em;"}
+*Semantic: relating to meaning in language or logic.*
+:::
+
+## Embedding Layers
+
+Great Video from 3blue1brown
+
+:::::: columns
+::: {.column width="40%"}
+<iframe width="315" height="560" src="https://www.youtube.com/embed/FJtFZwbvkI4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
+
+</iframe>
+:::
+
+:::: {.column width="60%"}
+<br><br>
+
+::: {.callout-note icon="false"}
+## 🤔 Question
+
+Can we use this for classification?
+:::
+::::
+::::::
+
+::: {style="font-size: 0.5em; text-align: center;"}
+[*Full 3Blue1Brown Playlist*](https://www.youtube.com/watch?v=aircAruvnKk&list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi)
+:::
+
+## Transformers
+Example: 
+
+- "I deposited money at the _ _ _ _ "
+
+- "I sat on the river _ _ _ _"
+
+\n
+
+-   Text-generative Transformer models operate on the principle of next-token prediction: given a text prompt from the user, what is the most probable next token (a word or part of a word) that will follow this input
+- Transformes allows the LLM to understand understand things like based on *ALL* the tokens I have seen, what should each token mean in this specific *context*. 
+
+
+## Transformers
+
+- When I predict the next token, how much attention should the model pay to all the preceding tokens? 
+
+- Attention blocks in tranformer models allos all tokens to talk to each other. 
+
+- Within each Transformer block, the multi-head self-attention layer is what allows tokens to communicate with each other. 
+
+- Without it, each token would be processed in isolation. The FFN layers that follow operate per-token, so attention is the only mechanism for inter-token information flow.
+
+
+
+## Transformers 
+
+::: {style="font-size: 0.5em; text-align: center;"}
+*Source: Cho et al. (2024). Transformer Explainer. IEEE VIS. — [Click here](https://poloclub.github.io/transformer-explainer/){target="_blank"}*
+:::
+
+<iframe
+  src="https://poloclub.github.io/transformer-explainer/"
+  width="100%"
+  height="580px"
+  style="border:none;">
+</iframe>
+
+
+
+
+## Transformers
+
+Attention Is All You Need
+
+::::: columns
+::: {.column width="50%"}
+### Original Paper
+
+<iframe src="https://arxiv.org/pdf/1706.03762" width="100%" height="550px" style="border:none;">
+
+</iframe>
+:::
+
+::: {.column width="50%"}
+### Annotated Implementation
+
+<iframe src="https://nlp.seas.harvard.edu/2018/04/03/attention.html" width="100%" height="550px" style="border:none;">
+
+</iframe>
+:::
+:::::
+
+## Transformers
+
+- Speaker notes: 
+
+- LLM's are jsut recursively predicting the next token. 
+
+- Preceeding tokens dictate the output proba. By adding "OH," probabbilty increases by double.
+
+- Temp changes the probability distribution of the predicted tokens. Higher temp = more randomness.
+
+## ChatGPT API
+
+## Inference Controls
+
+-   `temperature=0`: most deterministic decoding (lowest randomness).
+-   `max_tokens`: hard cap on generated output length.
+-   `reasoning_effort`: controls how much internal reasoning budget is used.
+-   Tradeoff: higher quality often means more latency and cost.
+
+``` python
+response = client.responses.create(
+    model="gpt-4.1",
+    input="Summarize this report in 3 bullets.",
+    temperature=0,
+    max_output_tokens=120,
+    reasoning={"effort": "medium"}
+)
+```
+
+## State of Open-Source LLMs
+
+-   Strong families: Llama, Qwen, Mistral, DeepSeek, and domain-specific variants.
+-   Practical benefits: self-hosting, lower marginal cost, data residency control.
+-   Typical constraints: hardware needs, ops complexity, eval/finetune overhead.
+-   Common pattern: open-source for retrieval/structured steps, frontier API for hardest reasoning.
+
+
+# RAG {.section-slide background-image="pictures/mumbai_x_pan.webp" background-size="cover" background-position="center" background-opacity="0.35"}
+
+## Grounding to the Truth
+
+-   We know that Base LLM knowledge – especially smaller models – can be stale or incomplete. Demonstrated by the Miami Example. 
+-   We also know that preceeding tokens play a pivital role. Prompting and context becomes important. 
+
+- I also assume that you know that giving your notes and asking for a study guide is better than just asking for a study guide on a certain topic. 
+  
+
+::: {.callout-note icon="false"}
+## 🤔 Question
+
+Is there a way, everytime we ask LLM a question, it injects the right context into the prompt?
+:::
+
+## Retrieval Patterns: SQL & Vector
+
+-   **SQL retrieval** for exact, structured data:
+    -   transactional facts
+    -   filtered records
+-   **Vector retrieval** for semantic relevance:
+    -   semantic matching and fuzzy mathing
+    -   unstructured text
+-   Can you combine both?
+
+## Vector Stores
+
+-   Store embeddings plus metadata for fast nearest-neighbor search.
+-   Add filters (team, date, source, confidentiality) before similarity ranking.
+-   Tune chunk size, overlap, and reranking for better recall and precision.
+-   Examples in production stacks: managed DB extensions or dedicated vector DBs.
+
+## LangChain and LangGraph
+
+-   **LangChain**: abstractions for prompts, retrievers, tools, chains.
+-   **LangGraph**: stateful, controllable workflows for agentic systems.
+-   Use LangGraph when you need explicit control flow, retries, checkpoints.
+-   Use both when building complex tool-using assistants.
+
+## NotebookLM Is a RAG App
+
+-   You provide docs.
+-   It indexes and retrieves relevant chunks.
+-   It answers with source-grounded context.
+-   This is RAG behavior, wrapped in a consumer-friendly interface.
+
+## Minimal RAG Flow (Pseudo-code)
+
+``` python
+query = "What changed in the policy this quarter?"
+hits = retriever.search(query, top_k=5)
+context = "\n\n".join([h["text"] for h in hits])
+prompt = f"Answer using only this context:\n{context}\n\nQuestion: {query}"
+answer = llm(prompt)
+```
+
+# LLM Evals {.section-slide background-image="pictures/hall.jpg" background-size="cover" background-opacity="0.35"}
+
+## Accuracy, Latency, Cost
+
+-   Quality alone is not enough; track all three.
+-   Accuracy: does the model solve the task correctly?
+-   Latency: does it respond fast enough for the user journey?
+-   Cost: is this sustainable per request and at scale?
+
+## What Is Right or Wrong?
+
+-   Define task-specific rubrics before testing.
+-   Separate objective checks (exact match, schema validity) from subjective checks (tone, clarity).
+-   Require evidence/citations for factual outputs where possible.
+-   Avoid ambiguous grading criteria.
+
+## Randomness and Determinacy
+
+-   LLM outputs vary due to sampling and model uncertainty.
+-   `temperature=0` improves repeatability but does not guarantee identical behavior everywhere.
+-   Prompt phrasing and context order can still cause output drift.
+-   This is why LLM evals require repeated runs and distributions, not single samples.
+
+## LLM as a Judge
+
+-   Use a strong model to score outputs against a rubric.
+-   Pair judge scores with human spot checks.
+-   Watch for judge bias and rubric leakage.
+-   Useful for scaling qualitative evaluation across large test sets.
+
+## Golden Set (How Teams Build It)
+
+1.  Pull representative real user tasks
+2.  Label ideal outputs with clear acceptance criteria
+3.  Add edge cases and known failure modes
+4.  Freeze versioned test set and rerun continuously
+
+## Continuous Evals
+
+-   Trigger evals on prompt changes, model swaps, or retriever updates.
+-   Capture user feedback signals (`like/dislike`, edits, retries).
+-   Feed production misses back into the golden set.
+-   Treat evals as a CI/CD gate, not a one-time milestone.
+
+# LLM Agents {.section-slide background-image="pictures/sb_audi.jpg" background-size="cover" background-opacity="0.35"}
+
+## Agency
+
+-   An agent is an LLM loop that can plan, call tools, observe results, and iterate.
+-   Agentic behavior is useful when tasks require multi-step decisions.
+-   Keep scope narrow and tool set explicit for reliability.
+-   Add halting conditions to avoid runaway loops.
+
+## Simple Agent: SQL Tooling
+
+-   Pattern: user question -\> intent parsing -\> SQL generation -\> execution -\> final answer.
+-   Risk: SQL injection, unsafe queries, and accidental data exposure.
+-   Controls:
+    -   allowlisted tables/columns
+    -   parameterized queries
+    -   read-only DB roles
+    -   query validators before execution
+
+## MCP (Model Context Protocol)
+
+-   MCP standardizes how models discover and use external tools/context.
+-   Think of it as a common interface between model runtimes and tool servers.
+-   Benefit: portability across clients and providers.
+-   Outcome: fewer bespoke tool integrations per app.
+
+``` json
+{
+  "tool": "run_sql",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "query": {"type": "string"}
+    },
+    "required": ["query"]
+  }
+}
+```
+
+# LLM Apps {.section-slide background-image="pictures/spiti_valley.jpg" background-size="contain" background-position="center" background-color="#ffffff" background-opacity="0.5"}
+
+## Building LLM Applications
+
+-   Core layers:
+    -   UX interface
+    -   orchestration layer
+    -   model + retrieval/tooling
+    -   observability/evals
+-   Product quality depends more on system design than on prompt tricks alone.
+
+## Production Checklist
+
+1.  Prompt and context versioning
+2.  Guardrails and policy checks
+3.  Metrics: quality, latency, cost, safety
+4.  Tracing and replay for failures
+5.  Human escalation paths for high-risk tasks
+
+# Looking Ahead {.section-slide background-image="pictures/star_trail.jpg" background-size="cover" background-opacity="0.35"}
+
+## Near-Term Direction
+
+-   Better multimodal reasoning and real-time interaction.
+-   Tighter integration between agents, tools, and enterprise data.
+-   More standardization (MCP-like protocols, eval frameworks, trace formats).
+-   Competitive advantage will come from proprietary data, evaluation rigor, and strong UX.
+
+## Closing
+
+-   Start with clear use cases.
+-   Build retrieval and evals early.
+-   Add agency gradually with strict controls.
+-   Iterate quickly with production feedback loops.

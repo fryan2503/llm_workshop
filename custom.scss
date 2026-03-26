@@ -1,0 +1,194 @@
+/*-- scss:defaults --*/
+
+// Miami University colors
+$body-bg: #FFFFFF;
+$body-color: #2D2D2D;
+$link-color: #C8102E;
+$link-color-hover: #9B0C23;
+$selection-bg: #C8102E;
+$selection-color: #FFFFFF;
+
+// Fonts — modern and readable
+$font-family-sans-serif: "Source Sans Pro", "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+$presentation-heading-font: "Avenir Next", "Source Sans Pro", "Segoe UI", "Helvetica Neue", sans-serif;
+$code-font: "JetBrains Mono", "SFMono-Regular", "Menlo", "Consolas", monospace;
+
+// Sizing
+$presentation-h1-font-size: 2em;
+$presentation-h2-font-size: 1.4em;
+$presentation-h3-font-size: 1.1em;
+$presentation-heading-color: #C8102E;
+$presentation-font-size-root: 30px;
+$presentation-line-height: 1.45;
+
+/*-- scss:rules --*/
+
+// ─── Global ───
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal .slides section {
+  box-sizing: border-box;
+  padding: 30px 52px;
+  max-width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-wrap: break-word;
+}
+
+.reveal .slides section > * {
+  max-width: 100%;
+}
+
+// ─── Headings ───
+.reveal h1 {
+  font-weight: 700;
+  color: #C8102E;
+  letter-spacing: -0.01em;
+}
+
+.reveal h2 {
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.reveal h3 {
+  font-weight: 600;
+  color: #666666;
+  font-size: 0.9em;
+}
+
+// ─── Body ───
+.reveal p {
+  color: #333333;
+  margin: 0.25em 0 0.5em;
+}
+
+.reveal ul li,
+.reveal ol li {
+  color: #333333;
+  margin-bottom: 0.2em;
+}
+
+.reveal ul li::marker {
+  color: #C8102E;
+}
+
+.reveal ol li::marker {
+  color: #C8102E;
+  font-weight: 700;
+}
+
+.reveal strong {
+  color: #1A1A1A;
+}
+
+.reveal em {
+  color: #C8102E;
+}
+
+// ─── Code ───
+.reveal pre {
+  background: #F5F5F5;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  font-size: 0.55em;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.reveal pre code {
+  max-width: 100%;
+  color: #1F2937;
+}
+
+.reveal p code,
+.reveal li code {
+  background: #F5F5F5;
+  border: 1px solid #E0E0E0;
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+  color: #C8102E;
+  font-size: 0.85em;
+}
+
+// ─── Blockquotes ───
+.reveal blockquote {
+  border-left: 3px solid #C8102E;
+  padding: 0.5em 1em;
+  margin: 0.8em 0;
+  color: #555555;
+  background: #FAFAFA;
+}
+
+// ─── Tables ───
+.reveal table {
+  font-size: 0.7em;
+  width: 100%;
+}
+
+.reveal table th {
+  background: #C8102E;
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 0.5em 0.8em;
+}
+
+.reveal table td {
+  padding: 0.4em 0.8em;
+  border-bottom: 1px solid #E0E0E0;
+  color: #333333;
+}
+
+.reveal table tr:nth-child(even) td {
+  background: #FAFAFA;
+}
+
+// ─── Links ───
+.reveal a {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// ─── Footer / slide numbers ───
+.reveal .footer {
+  font-size: 0.4em;
+  color: #999999;
+}
+
+.reveal .slide-number {
+  background: transparent;
+  color: #999999;
+  font-size: 0.5em;
+}
+
+// ─── Progress bar ───
+.reveal .progress {
+  height: 3px;
+  color: #C8102E;
+}
+
+// ─── Title slide ───
+.reveal .slides > section:first-child {
+  h1 {
+    font-size: 2.2em;
+    margin-top: 1em;
+    margin-bottom: 0.1em;
+  }
+
+  p.author {
+    color: #555555;
+    font-size: 0.75em;
+  }
+
+  p.date {
+    color: #999999;
+    font-size: 0.6em;
+  }
+}
