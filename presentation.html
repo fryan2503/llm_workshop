@@ -209,10 +209,8 @@ Ryan Singh
 <ol type="1">
 <li>LLM Foundations</li>
 <li>RAG (Retrieval-Augmented Generation)</li>
-<li>LLM Evals</li>
 <li>LLM Agents</li>
-<li>LLM Apps</li>
-<li>Looking Ahead</li>
+<li>LLM Evals</li>
 </ol>
 </section>
 
@@ -316,7 +314,7 @@ Ryan Singh
 <h2>Transformers</h2>
 <ul>
 <li><p>When I predict the next token, how much attention should the model pay to all the preceding tokens?</p></li>
-<li><p>Attention blocks in tranformer models allos all tokens to talk to each other.</p></li>
+<li><p>Attention blocks in tranformer models allow all tokens to talk to each other.</p></li>
 <li><p>Within each Transformer block, the multi-head self-attention layer is what allows tokens to communicate with each other.</p></li>
 <li><p>Without it, each token would be processed in isolation. The FFN layers that follow operate per-token, so attention is the only mechanism for inter-token information flow.</p></li>
 </ul>
@@ -344,19 +342,15 @@ Ryan Singh
 </div></div>
 </section>
 <section class="slide level2">
-<h2>Transformers</h2>
+<h2>The main take-aways</h2>
 <ul>
-<li><p>Speaker notes:</p></li>
-<li><p>LLM’s are jsut recursively predicting the next token.</p></li>
+<li><p>LLM’s are just recursively predicting the next token.</p></li>
 <li><p>Preceeding tokens dictate the output proba. By adding “OH,” probabbilty increases by double.</p></li>
 <li><p>Temp changes the probability distribution of the predicted tokens. Higher temp = more randomness.</p></li>
 </ul>
 </section>
 <section class="slide level2">
 <h2>ChatGPT API</h2>
-</section>
-<section class="slide level2">
-<h2>Inference Controls</h2>
 <ul>
 <li><code>temperature=0</code>: most deterministic decoding (lowest randomness).</li>
 <li><code>max_tokens</code>: hard cap on generated output length.</li>
@@ -389,8 +383,8 @@ Ryan Singh
 <h2>Grounding to the Truth</h2>
 <ul>
 <li><p>We know that Base LLM knowledge – especially smaller models – can be stale or incomplete. Demonstrated by the Miami Example.</p></li>
-<li><p>We also know that preceeding tokens play a pivital role. Prompting and context becomes important.</p></li>
-<li><p>I also assume that you know that giving your notes and asking for a study guide is better than just asking for a study guide on a certain topic.</p></li>
+<li><p>We also know that preceeding tokens play a pivital role. Prompting and context becomes important. Think back to the “Miami(OH),” example.</p></li>
+<li><p>I also assume that you know that giving your notes to an LLM as context and asking for a study guide is better than just asking for a study guide on a certain topic.</p></li>
 </ul>
 <div class="callout callout-note no-icon callout-titled callout-style-default">
 <div class="callout-body">
@@ -416,35 +410,14 @@ Ryan Singh
 <li>semantic matching and fuzzy mathing</li>
 <li>unstructured text</li>
 </ul></li>
-<li>Can you combine both?</li>
 </ul>
-</section>
-<section class="slide level2">
-<h2>Vector Stores</h2>
-<ul>
-<li>Store embeddings plus metadata for fast nearest-neighbor search.</li>
-<li>Add filters (team, date, source, confidentiality) before similarity ranking.</li>
-<li>Tune chunk size, overlap, and reranking for better recall and precision.</li>
-<li>Examples in production stacks: managed DB extensions or dedicated vector DBs.</li>
-</ul>
-</section>
-<section class="slide level2">
-<h2>LangChain and LangGraph</h2>
-<ul>
-<li><strong>LangChain</strong>: abstractions for prompts, retrievers, tools, chains.</li>
-<li><strong>LangGraph</strong>: stateful, controllable workflows for agentic systems.</li>
-<li>Use LangGraph when you need explicit control flow, retries, checkpoints.</li>
-<li>Use both when building complex tool-using assistants.</li>
-</ul>
-</section>
-<section class="slide level2">
-<h2>NotebookLM Is a RAG App</h2>
-<ul>
-<li>You provide docs.</li>
-<li>It indexes and retrieves relevant chunks.</li>
-<li>It answers with source-grounded context.</li>
-<li>This is RAG behavior, wrapped in a consumer-friendly interface.</li>
-</ul>
+<div class="callout callout-none no-icon callout-style-simple">
+<div class="callout-body">
+<div class="callout-content">
+<p>Can you combine both in the same app?</p>
+</div>
+</div>
+</div>
 </section>
 <section class="slide level2">
 <h2>Minimal RAG Flow (Pseudo-code)</h2>
@@ -453,64 +426,124 @@ Ryan Singh
 <span id="cb3-3"><a href=""></a>context <span class="op">=</span> <span class="st">"</span><span class="ch">\n\n</span><span class="st">"</span>.join([h[<span class="st">"text"</span>] <span class="cf">for</span> h <span class="kw">in</span> hits])</span>
 <span id="cb3-4"><a href=""></a>prompt <span class="op">=</span> <span class="ss">f"Answer using only this context:</span><span class="ch">\n</span><span class="sc">{</span>context<span class="sc">}</span><span class="ch">\n\n</span><span class="ss">Question: </span><span class="sc">{</span>query<span class="sc">}</span><span class="ss">"</span></span>
 <span id="cb3-5"><a href=""></a>answer <span class="op">=</span> llm(prompt)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section></section>
-<section>
-<section class="title-slide slide level1 section-slide center" data-background-image="pictures/hall.jpg" data-background-size="cover" data-background-opacity="0.35">
-<h1>LLM Evals</h1>
-
 </section>
 <section class="slide level2">
-<h2>Accuracy, Latency, Cost</h2>
+<h2>Vector Stores</h2>
 <ul>
-<li>Quality alone is not enough; track all three.</li>
-<li>Accuracy: does the model solve the task correctly?</li>
-<li>Latency: does it respond fast enough for the user journey?</li>
-<li>Cost: is this sustainable per request and at scale?</li>
+<li>A vector store indexes embedding vectors alongside metadata for fast nearest-neighbor lookup.</li>
+<li>At query time, your question is embedded into the same vector space, and the store returns the closest matching chunks.</li>
+<li>Pre-filters (date, source, department) narrow the search space before similarity ranking runs.</li>
+<li>Chunk size, overlap, and reranking strategy directly affect recall and precision — these are tunable knobs.</li>
+<li>We will be using FAISS in our demo today. <sup>1</sup></li>
+<li>Other popular options include Pinecone, MongoDB, Chromas</li>
+</ul>
+<aside><ol class="aside-footnotes"><li id="fn2"><p>Johnson, J., Douze, M., &amp; Jégou, H. (2019). Billion-scale similarity search with GPUs. <em>IEEE Transactions on Big Data</em>, 7(3), 535–547. <a href="https://github.com/facebookresearch/faiss">github.com/facebookresearch/faiss</a></p></li></ol></aside></section>
+<section class="slide level2">
+<h2>LangChain and LangGraph</h2>
+<ul>
+<li><strong>LangChain</strong> provides modular abstractions — prompts, retrievers, tools, and chains — so you can swap components without rewriting glue code.</li>
+<li><strong>LangGraph</strong> extends this with stateful, graph-based workflows: define nodes, edges, and control flow for multi-step agentic pipelines.</li>
+<li>Rule of thumb: if your task is a single retrieval → generate pass, LangChain alone is fine. If you need branching, retries, or loops, reach for LangGraph.</li>
 </ul>
 </section>
 <section class="slide level2">
-<h2>What Is Right or Wrong?</h2>
+<h2>LangGraph: Stateful Agent Graphs</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
 <ul>
-<li>Define task-specific rubrics before testing.</li>
-<li>Separate objective checks (exact match, schema validity) from subjective checks (tone, clarity).</li>
-<li>Require evidence/citations for factual outputs where possible.</li>
-<li>Avoid ambiguous grading criteria.</li>
+<li>LangGraph models workflows as <strong>directed graphs</strong> where a shared state object flows through each step.</li>
+<li>Each <strong>node</strong> is a plain Python function: it reads from state, does work (LLM call, retrieval, tool use), and returns the keys it wants to update.</li>
+<li><strong>Edges</strong> wire nodes together — fixed, conditional, or looping — giving you explicit control over execution order.</li>
+<li>This makes multi-step tasks debuggable and reproducible: you can inspect state at every node boundary.</li>
 </ul>
+</div><div class="column" style="width:50%;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="" aria-hidden="true" tabindex="-1"></a>builder <span class="op">=</span> StateGraph(State)</span>
+<span id="cb4-2"><a href="" aria-hidden="true" tabindex="-1"></a><span class="co"># Nodes</span></span>
+<span id="cb4-3"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_node(<span class="st">"retrieve"</span>, retrieve)</span>
+<span id="cb4-4"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_node(<span class="st">"generate"</span>, generate)</span>
+<span id="cb4-5"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_node(<span class="st">"extract_keywords"</span>, extract_keywords)</span>
+<span id="cb4-6"><a href="" aria-hidden="true" tabindex="-1"></a><span class="co"># Edges</span></span>
+<span id="cb4-7"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(START, <span class="st">"extract_keywords"</span>)</span>
+<span id="cb4-8"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(<span class="st">"extract_keywords"</span>, <span class="st">"retrieve"</span>)</span>
+<span id="cb4-9"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(<span class="st">"retrieve"</span>, <span class="st">"generate"</span>)</span>
+<span id="cb4-10"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(<span class="st">"generate"</span>, END)</span>
+<span id="cb4-11"><a href="" aria-hidden="true" tabindex="-1"></a><span class="co"># Compile &amp; view</span></span>
+<span id="cb4-12"><a href="" aria-hidden="true" tabindex="-1"></a>graph <span class="op">=</span> builder.<span class="bu">compile</span>()</span>
+<span id="cb4-13"><a href="" aria-hidden="true" tabindex="-1"></a>display(Image(graph.get_graph().draw_mermaid_png()))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="pictures/rag_graph.png" class="quarto-figure quarto-figure-center" style="width:30.0%"></p>
+</figure>
+</div>
+</div></div>
 </section>
 <section class="slide level2">
-<h2>Randomness and Determinacy</h2>
+<h2>State in LangGraph</h2>
 <ul>
-<li>LLM outputs vary due to sampling and model uncertainty.</li>
-<li><code>temperature=0</code> improves repeatability but does not guarantee identical behavior everywhere.</li>
-<li>Prompt phrasing and context order can still cause output drift.</li>
-<li>This is why LLM evals require repeated runs and distributions, not single samples.</li>
+<li>State is a <strong><code>TypedDict</code></strong> — a typed Python dict that every node in the graph can read and write to.</li>
+<li>Nodes return a <em>partial</em> dict with only the keys they want to update; LangGraph merges it back automatically.</li>
+<li><strong>Reducers</strong> control merge behavior per key. The default is last-write-wins, but <code>add_messages</code> appends instead — useful for building up a conversation history.</li>
 </ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href=""></a><span class="im">from</span> typing <span class="im">import</span> TypedDict, Annotated, List</span>
+<span id="cb5-2"><a href=""></a><span class="im">from</span> langchain_core.messages <span class="im">import</span> AnyMessage</span>
+<span id="cb5-3"><a href=""></a><span class="im">from</span> langgraph.graph.message <span class="im">import</span> add_messages</span>
+<span id="cb5-4"><a href=""></a></span>
+<span id="cb5-5"><a href=""></a><span class="kw">class</span> State(TypedDict):</span>
+<span id="cb5-6"><a href=""></a>    messages: Annotated[<span class="bu">list</span>[AnyMessage], add_messages]  <span class="co"># appends each turn</span></span>
+<span id="cb5-7"><a href=""></a>    question: <span class="bu">str</span>       <span class="co"># overwritten each call</span></span>
+<span id="cb5-8"><a href=""></a>    documents: List[<span class="bu">str</span>]</span>
+<span id="cb5-9"><a href=""></a>    generation: <span class="bu">str</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="slide level2">
-<h2>LLM as a Judge</h2>
+<h2>LangGraph: Nodes and Edges</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<h3>Nodes</h3>
 <ul>
-<li>Use a strong model to score outputs against a rubric.</li>
-<li>Pair judge scores with human spot checks.</li>
-<li>Watch for judge bias and rubric leakage.</li>
-<li>Useful for scaling qualitative evaluation across large test sets.</li>
+<li>Any callable with signature <code>fn(state) -&gt; dict</code></li>
+<li>Return only the keys you want to update — everything else stays untouched</li>
+<li>Can call LLMs, retrievers, tools, APIs, or even nested sub-graphs</li>
 </ul>
-</section>
-<section class="slide level2">
-<h2>Golden Set (How Teams Build It)</h2>
-<ol type="1">
-<li>Pull representative real user tasks</li>
-<li>Label ideal outputs with clear acceptance criteria</li>
-<li>Add edge cases and known failure modes</li>
-<li>Freeze versioned test set and rerun continuously</li>
-</ol>
-</section>
-<section class="slide level2">
-<h2>Continuous Evals</h2>
+</div><div class="column" style="width:50%;">
+<h3>Edges</h3>
 <ul>
-<li>Trigger evals on prompt changes, model swaps, or retriever updates.</li>
-<li>Capture user feedback signals (<code>like/dislike</code>, edits, retries).</li>
-<li>Feed production misses back into the golden set.</li>
-<li>Treat evals as a CI/CD gate, not a one-time milestone.</li>
+<li><strong>Fixed</strong>: <code>add_edge(a, b)</code> — always routes a → b</li>
+<li><strong>Conditional</strong>: <code>add_conditional_edges(a, router_fn)</code> — routes dynamically based on state values</li>
+<li><code>START</code> and <code>END</code> are built-in sentinels that mark entry and exit points</li>
+</ul>
+</div></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href=""></a><span class="kw">def</span> retrieve(state: State) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb6-2"><a href=""></a>    docs <span class="op">=</span> retriever.invoke(state[<span class="st">"question"</span>])</span>
+<span id="cb6-3"><a href=""></a>    <span class="cf">return</span> {<span class="st">"documents"</span>: docs}          <span class="co"># only updates 'documents'</span></span>
+<span id="cb6-4"><a href=""></a></span>
+<span id="cb6-5"><a href=""></a>builder.add_conditional_edges(</span>
+<span id="cb6-6"><a href=""></a>    <span class="st">"grade"</span>,</span>
+<span id="cb6-7"><a href=""></a>    <span class="kw">lambda</span> s: <span class="st">"generate"</span> <span class="cf">if</span> s[<span class="st">"relevant"</span>] <span class="cf">else</span> <span class="st">"retrieve"</span>,</span>
+<span id="cb6-8"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section class="slide level2">
+<h2>RAG in Practice: Art Museum Search</h2>
+<ul>
+<li>Curators had to write exact SQL queries to search the collection — but records were often incomplete, inconsistently tagged or missing metadata entirely.</li>
+<li>Exact-match SQL fails when the data is messy. A search for “black and white portrait photography” returns nothing if the record only says “gelatin silver print, 1940.”
+<ul>
+<li>Vector Embeddings capture semantic similarity, so the retriever can surface relevant records</li>
+</ul></li>
+<li>The goal: replace rigid SQL lookup with natural language retrieval.<sup>1</sup></li>
+</ul>
+<aside><ol class="aside-footnotes"><li id="fn3"><p>Github Repo <em>RAG Omeka: Natural Language Retrieval for Art Museum Collections</em>. <a href="https://github.com/fryan2503/rag_omeka">github.com/fryan2503/rag_omeka</a></p></li></ol></aside></section>
+<section class="slide level2">
+<h2>Visualizing the Vector Store</h2>
+<iframe src="assets/vectorstore_3d.html" width="100%" height="600px" style="border:none;">
+</iframe>
+</section>
+<section class="slide level2">
+<h2>NotebookLM Is a RAG App</h2>
+<ul>
+<li>You provide docs.</li>
+<li>It indexes and retrieves relevant chunks.</li>
+<li>It answers with source-grounded context.</li>
+<li>This is RAG behavior, wrapped in a consumer-friendly interface.</li>
 </ul>
 </section></section>
 <section>
@@ -521,10 +554,8 @@ Ryan Singh
 <section class="slide level2">
 <h2>Agency</h2>
 <ul>
-<li>An agent is an LLM loop that can plan, call tools, observe results, and iterate.</li>
+<li>an agent is an LLM that can autonomously take actions in a loop (tool use, code execution, web browsing), plan multi-step tasks, and course-correct based on feedback</li>
 <li>Agentic behavior is useful when tasks require multi-step decisions.</li>
-<li>Keep scope narrow and tool set explicit for reliability.</li>
-<li>Add halting conditions to avoid runaway loops.</li>
 </ul>
 </section>
 <section class="slide level2">
@@ -546,70 +577,62 @@ Ryan Singh
 <ul>
 <li>MCP standardizes how models discover and use external tools/context.</li>
 <li>Think of it as a common interface between model runtimes and tool servers.</li>
-<li>Benefit: portability across clients and providers.</li>
-<li>Outcome: fewer bespoke tool integrations per app.</li>
+<li>Before USB C and Thunderbolt, every device had its own weird plug. MCP is the USB C of model-tool integration.</li>
+<li>That’s what AI tool integration was like before MCP — every tool (Slack, Google Drive, Notion) needed its own custom integration code.</li>
 </ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource json number-lines code-with-copy"><code class="sourceCode json"><span id="cb4-1"><a href=""></a><span class="fu">{</span></span>
-<span id="cb4-2"><a href=""></a>  <span class="dt">"tool"</span><span class="fu">:</span> <span class="st">"run_sql"</span><span class="fu">,</span></span>
-<span id="cb4-3"><a href=""></a>  <span class="dt">"input_schema"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb4-4"><a href=""></a>    <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"object"</span><span class="fu">,</span></span>
-<span id="cb4-5"><a href=""></a>    <span class="dt">"properties"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb4-6"><a href=""></a>      <span class="dt">"query"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"type"</span><span class="fu">:</span> <span class="st">"string"</span><span class="fu">}</span></span>
-<span id="cb4-7"><a href=""></a>    <span class="fu">},</span></span>
-<span id="cb4-8"><a href=""></a>    <span class="dt">"required"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"query"</span><span class="ot">]</span></span>
-<span id="cb4-9"><a href=""></a>  <span class="fu">}</span></span>
-<span id="cb4-10"><a href=""></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section></section>
+</section>
+<section class="slide level2">
+<h2>MCP Example</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href=""></a><span class="co"># MCP Server: expose a tool</span></span>
+<span id="cb7-2"><a href=""></a><span class="at">@server.list_tools</span>()</span>
+<span id="cb7-3"><a href=""></a><span class="cf">async</span> <span class="kw">def</span> list_tools():</span>
+<span id="cb7-4"><a href=""></a>    <span class="cf">return</span> [Tool(name<span class="op">=</span><span class="st">"get_weather"</span>, inputSchema<span class="op">=</span>{...})]</span>
+<span id="cb7-5"><a href=""></a></span>
+<span id="cb7-6"><a href=""></a><span class="at">@server.call_tool</span>()</span>
+<span id="cb7-7"><a href=""></a><span class="cf">async</span> <span class="kw">def</span> call_tool(name, arguments):</span>
+<span id="cb7-8"><a href=""></a>    <span class="cf">return</span> get_weather(arguments[<span class="st">"city"</span>])</span>
+<span id="cb7-9"><a href=""></a></span>
+<span id="cb7-10"><a href=""></a><span class="co"># MCP Client: discover and use it</span></span>
+<span id="cb7-11"><a href=""></a>tools <span class="op">=</span> <span class="cf">await</span> session.list_tools()        <span class="co"># "What can you do?"</span></span>
+<span id="cb7-12"><a href=""></a>result <span class="op">=</span> <span class="cf">await</span> session.call_tool(         <span class="co"># "Do this thing"</span></span>
+<span id="cb7-13"><a href=""></a>    <span class="st">"get_weather"</span>, {<span class="st">"city"</span>: <span class="st">"Cincinnati"</span>}</span>
+<span id="cb7-14"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section class="slide level2">
+<h2>Auto Research — Recursive Agent Example</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<ul>
+<li>The core idea: give an AI agent a small but real LLM training setup and let it experiment autonomously overnight. It modifies the code, trains for 5 minutes, checks if the result improved.</li>
+<li>I forked this repo and ran it for our 591 project. The agent ran 20 experiments overnight and 2 saw small improvements in the target metric. <sup>1</sup></li>
+</ul>
+</div><div class="column" style="width:50%;">
+<iframe src="https://platform.twitter.com/embed/Tweet.html?id=2031135152349524125" width="550" height="500" style="border:none;" allowfullscreen="">
+</iframe>
+</div></div>
+<aside><ol class="aside-footnotes"><li id="fn4"><p><em>Auto Research Fork</em>. <a href="https://github.com/fryan2503/autoresearch">github.com/fryan2503/autoresearch</a></p></li></ol></aside></section></section>
 <section>
-<section class="title-slide slide level1 section-slide center" data-background-image="pictures/spiti_valley.jpg" data-background-size="contain" data-background-position="center" data-background-color="#ffffff" data-background-opacity="0.5">
-<h1>LLM Apps</h1>
+<section class="title-slide slide level1 section-slide center" data-background-image="pictures/hall.jpg" data-background-size="cover" data-background-opacity="0.35">
+<h1>LLM Evals</h1>
 
 </section>
 <section class="slide level2">
-<h2>Building LLM Applications</h2>
-<ul>
-<li>Core layers:
-<ul>
-<li>UX interface</li>
-<li>orchestration layer</li>
-<li>model + retrieval/tooling</li>
-<li>observability/evals</li>
-</ul></li>
-<li>Product quality depends more on system design than on prompt tricks alone.</li>
-</ul>
+<h2>What Is Right or Wrong?</h2>
 </section>
 <section class="slide level2">
-<h2>Production Checklist</h2>
-<ol type="1">
-<li>Prompt and context versioning</li>
-<li>Guardrails and policy checks</li>
-<li>Metrics: quality, latency, cost, safety</li>
-<li>Tracing and replay for failures</li>
-<li>Human escalation paths for high-risk tasks</li>
-</ol>
-</section></section>
-<section>
-<section class="title-slide slide level1 section-slide center" data-background-image="pictures/star_trail.jpg" data-background-size="cover" data-background-opacity="0.35">
-<h1>Looking Ahead</h1>
-
+<h2>Randomness and Determinacy</h2>
 </section>
 <section class="slide level2">
-<h2>Near-Term Direction</h2>
-<ul>
-<li>Better multimodal reasoning and real-time interaction.</li>
-<li>Tighter integration between agents, tools, and enterprise data.</li>
-<li>More standardization (MCP-like protocols, eval frameworks, trace formats).</li>
-<li>Competitive advantage will come from proprietary data, evaluation rigor, and strong UX.</li>
-</ul>
+<h2>Accuracy, Latency, Cost</h2>
 </section>
 <section class="slide level2">
-<h2>Closing</h2>
-<ul>
-<li>Start with clear use cases.</li>
-<li>Build retrieval and evals early.</li>
-<li>Add agency gradually with strict controls.</li>
-<li>Iterate quickly with production feedback loops.</li>
-</ul>
+<h2>LLM as a Judge</h2>
+</section>
+<section class="slide level2">
+<h2>Golden Set (How Teams Build It)</h2>
+</section>
+<section class="slide level2">
+<h2>Continuous Evals</h2>
 
 </section></section>
 

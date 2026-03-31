@@ -23,10 +23,8 @@ format:
 
 1.  LLM Foundations
 2.  RAG (Retrieval-Augmented Generation)
-3.  LLM Evals
-4.  LLM Agents
-5.  LLM Apps
-6.  Looking Ahead
+3.  LLM Agents
+4.  LLM Evals
 
 # LLM Foundations {.section-slide background-image="pictures/nyc_wtc.jpg" background-size="cover" background-opacity="0.35"}
 
@@ -128,7 +126,7 @@ Example:
 
 - When I predict the next token, how much attention should the model pay to all the preceding tokens? 
 
-- Attention blocks in tranformer models allos all tokens to talk to each other. 
+- Attention blocks in tranformer models allow all tokens to talk to each other. 
 
 - Within each Transformer block, the multi-head self-attention layer is what allows tokens to communicate with each other. 
 
@@ -174,19 +172,16 @@ Attention Is All You Need
 :::
 :::::
 
-## Transformers
+## The main take-aways
 
-- Speaker notes: 
 
-- LLM's are jsut recursively predicting the next token. 
+- LLM's are just recursively predicting the next token. 
 
 - Preceeding tokens dictate the output proba. By adding "OH," probabbilty increases by double.
 
 - Temp changes the probability distribution of the predicted tokens. Higher temp = more randomness.
 
 ## ChatGPT API
-
-## Inference Controls
 
 -   `temperature=0`: most deterministic decoding (lowest randomness).
 -   `max_tokens`: hard cap on generated output length.
@@ -216,9 +211,9 @@ response = client.responses.create(
 ## Grounding to the Truth
 
 -   We know that Base LLM knowledge – especially smaller models – can be stale or incomplete. Demonstrated by the Miami Example. 
--   We also know that preceeding tokens play a pivital role. Prompting and context becomes important. 
+-   We also know that preceeding tokens play a pivital role. Prompting and context becomes important. Think back to the "Miami(OH)," example. 
 
-- I also assume that you know that giving your notes and asking for a study guide is better than just asking for a study guide on a certain topic. 
+- I also assume that you know that giving your notes to an LLM as context and asking for a study guide is better than just asking for a study guide on a certain topic. 
   
 
 ::: {.callout-note icon="false"}
@@ -232,31 +227,15 @@ Is there a way, everytime we ask LLM a question, it injects the right context in
 -   **SQL retrieval** for exact, structured data:
     -   transactional facts
     -   filtered records
+    
 -   **Vector retrieval** for semantic relevance:
     -   semantic matching and fuzzy mathing
     -   unstructured text
--   Can you combine both?
 
-## Vector Stores
 
--   Store embeddings plus metadata for fast nearest-neighbor search.
--   Add filters (team, date, source, confidentiality) before similarity ranking.
--   Tune chunk size, overlap, and reranking for better recall and precision.
--   Examples in production stacks: managed DB extensions or dedicated vector DBs.
-
-## LangChain and LangGraph
-
--   **LangChain**: abstractions for prompts, retrievers, tools, chains.
--   **LangGraph**: stateful, controllable workflows for agentic systems.
--   Use LangGraph when you need explicit control flow, retries, checkpoints.
--   Use both when building complex tool-using assistants.
-
-## NotebookLM Is a RAG App
-
--   You provide docs.
--   It indexes and retrieves relevant chunks.
--   It answers with source-grounded context.
--   This is RAG behavior, wrapped in a consumer-friendly interface.
+::: {.callout}
+Can you combine both in the same app? 
+:::
 
 ## Minimal RAG Flow (Pseudo-code)
 
@@ -268,58 +247,134 @@ prompt = f"Answer using only this context:\n{context}\n\nQuestion: {query}"
 answer = llm(prompt)
 ```
 
-# LLM Evals {.section-slide background-image="pictures/hall.jpg" background-size="cover" background-opacity="0.35"}
+## Vector Stores
 
-## Accuracy, Latency, Cost
+-   A vector store indexes embedding vectors alongside metadata for fast nearest-neighbor lookup.
+-   At query time, your question is embedded into the same vector space, and the store returns the closest matching chunks.
+-   Pre-filters (date, source, department) narrow the search space before similarity ranking runs.
+-   Chunk size, overlap, and reranking strategy directly affect recall and precision — these are tunable knobs.
+-   We will be using FAISS in our demo today. [^2]
+-   Other popular options include Pinecone, MongoDB, Chromas
 
--   Quality alone is not enough; track all three.
--   Accuracy: does the model solve the task correctly?
--   Latency: does it respond fast enough for the user journey?
--   Cost: is this sustainable per request and at scale?
+[^2]: Johnson, J., Douze, M., & Jégou, H. (2019). Billion-scale similarity search with GPUs. *IEEE Transactions on Big Data*, 7(3), 535–547. [github.com/facebookresearch/faiss](https://github.com/facebookresearch/faiss)
 
-## What Is Right or Wrong?
 
--   Define task-specific rubrics before testing.
--   Separate objective checks (exact match, schema validity) from subjective checks (tone, clarity).
--   Require evidence/citations for factual outputs where possible.
--   Avoid ambiguous grading criteria.
 
-## Randomness and Determinacy
+## LangChain and LangGraph
 
--   LLM outputs vary due to sampling and model uncertainty.
--   `temperature=0` improves repeatability but does not guarantee identical behavior everywhere.
--   Prompt phrasing and context order can still cause output drift.
--   This is why LLM evals require repeated runs and distributions, not single samples.
+-   **LangChain** provides modular abstractions — prompts, retrievers, tools, and chains — so you can swap components without rewriting glue code.
+-   **LangGraph** extends this with stateful, graph-based workflows: define nodes, edges, and control flow for multi-step agentic pipelines.
+-   Rule of thumb: if your task is a single retrieval → generate pass, LangChain alone is fine. If you need branching, retries, or loops, reach for LangGraph.
 
-## LLM as a Judge
 
--   Use a strong model to score outputs against a rubric.
--   Pair judge scores with human spot checks.
--   Watch for judge bias and rubric leakage.
--   Useful for scaling qualitative evaluation across large test sets.
+## LangGraph: Stateful Agent Graphs
 
-## Golden Set (How Teams Build It)
+:::: {.columns}
 
-1.  Pull representative real user tasks
-2.  Label ideal outputs with clear acceptance criteria
-3.  Add edge cases and known failure modes
-4.  Freeze versioned test set and rerun continuously
+::: {.column width="50%"}
+-   LangGraph models workflows as **directed graphs** where a shared state object flows through each step.
+-   Each **node** is a plain Python function: it reads from state, does work (LLM call, retrieval, tool use), and returns the keys it wants to update.
+-   **Edges** wire nodes together — fixed, conditional, or looping — giving you explicit control over execution order.
+-   This makes multi-step tasks debuggable and reproducible: you can inspect state at every node boundary.
+:::
 
-## Continuous Evals
+::: {.column width="50%"}
+```{.python code-line-numbers="false"}
+builder = StateGraph(State)
+# Nodes
+builder.add_node("retrieve", retrieve)
+builder.add_node("generate", generate)
+builder.add_node("extract_keywords", extract_keywords)
+# Edges
+builder.add_edge(START, "extract_keywords")
+builder.add_edge("extract_keywords", "retrieve")
+builder.add_edge("retrieve", "generate")
+builder.add_edge("generate", END)
+# Compile & view
+graph = builder.compile()
+display(Image(graph.get_graph().draw_mermaid_png()))
+```
 
--   Trigger evals on prompt changes, model swaps, or retriever updates.
--   Capture user feedback signals (`like/dislike`, edits, retries).
--   Feed production misses back into the golden set.
--   Treat evals as a CI/CD gate, not a one-time milestone.
+![](pictures/rag_graph.png){fig-align="center" width="30%"}
+:::
+
+::::
+
+
+## State in LangGraph
+
+-   State is a **`TypedDict`** — a typed Python dict that every node in the graph can read and write to.
+-   Nodes return a *partial* dict with only the keys they want to update; LangGraph merges it back automatically.
+-   **Reducers** control merge behavior per key. The default is last-write-wins, but `add_messages` appends instead — useful for building up a conversation history.
+``` python
+from typing import TypedDict, Annotated, List
+from langchain_core.messages import AnyMessage
+from langgraph.graph.message import add_messages
+
+class State(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]  # appends each turn
+    question: str       # overwritten each call
+    documents: List[str]
+    generation: str
+```
+
+## LangGraph: Nodes and Edges
+
+:::::: columns
+::: {.column width="50%"}
+### Nodes
+-   Any callable with signature `fn(state) -> dict`
+-   Return only the keys you want to update — everything else stays untouched
+-   Can call LLMs, retrievers, tools, APIs, or even nested sub-graphs
+:::
+
+::: {.column width="50%"}
+### Edges
+-   **Fixed**: `add_edge(a, b)` — always routes a → b
+-   **Conditional**: `add_conditional_edges(a, router_fn)` — routes dynamically based on state values
+-   `START` and `END` are built-in sentinels that mark entry and exit points
+:::
+::::::
+``` python
+def retrieve(state: State) -> dict:
+    docs = retriever.invoke(state["question"])
+    return {"documents": docs}          # only updates 'documents'
+
+builder.add_conditional_edges(
+    "grade",
+    lambda s: "generate" if s["relevant"] else "retrieve",
+)
+```
+## RAG in Practice: Art Museum Search 
+
+-   Curators had to write exact SQL queries to search the collection — but records were often incomplete, inconsistently tagged or missing metadata entirely.
+-   Exact-match SQL fails when the data is messy. A search for "black and white portrait photography" returns nothing if the record only says "gelatin silver print, 1940."
+    -  Vector Embeddings capture semantic similarity, so the retriever can surface relevant records 
+-   The goal: replace rigid SQL lookup with natural language retrieval.[^3]
+
+[^3]: Github Repo *RAG Omeka: Natural Language Retrieval for Art Museum Collections*. [github.com/fryan2503/rag_omeka](https://github.com/fryan2503/rag_omeka)
+
+## Visualizing the Vector Store
+
+<iframe src="assets/vectorstore_3d.html" width="100%" height="600px" style="border:none;">
+</iframe>
+
+## NotebookLM Is a RAG App
+
+-   You provide docs.
+-   It indexes and retrieves relevant chunks.
+-   It answers with source-grounded context.
+-   This is RAG behavior, wrapped in a consumer-friendly interface.
+
+
+
 
 # LLM Agents {.section-slide background-image="pictures/sb_audi.jpg" background-size="cover" background-opacity="0.35"}
 
 ## Agency
 
--   An agent is an LLM loop that can plan, call tools, observe results, and iterate.
+-   an agent is an LLM that can autonomously take actions in a loop (tool use, code execution, web browsing), plan multi-step tasks, and course-correct based on feedback
 -   Agentic behavior is useful when tasks require multi-step decisions.
--   Keep scope narrow and tool set explicit for reliability.
--   Add halting conditions to avoid runaway loops.
 
 ## Simple Agent: SQL Tooling
 
@@ -333,55 +388,59 @@ answer = llm(prompt)
 
 ## MCP (Model Context Protocol)
 
--   MCP standardizes how models discover and use external tools/context.
--   Think of it as a common interface between model runtimes and tool servers.
--   Benefit: portability across clients and providers.
--   Outcome: fewer bespoke tool integrations per app.
+-  MCP standardizes how models discover and use external tools/context.
+-  Think of it as a common interface between model runtimes and tool servers.
+-  Before USB C and Thunderbolt, every device had its own weird plug. MCP is the USB C of model-tool integration.
+- That's what AI tool integration was like before MCP — every tool (Slack, Google Drive, Notion) needed its own custom integration code.
 
-``` json
-{
-  "tool": "run_sql",
-  "input_schema": {
-    "type": "object",
-    "properties": {
-      "query": {"type": "string"}
-    },
-    "required": ["query"]
-  }
-}
+
+## MCP Example 
+```{.python}
+# MCP Server: expose a tool
+@server.list_tools()
+async def list_tools():
+    return [Tool(name="get_weather", inputSchema={...})]
+
+@server.call_tool()
+async def call_tool(name, arguments):
+    return get_weather(arguments["city"])
+
+# MCP Client: discover and use it
+tools = await session.list_tools()        # "What can you do?"
+result = await session.call_tool(         # "Do this thing"
+    "get_weather", {"city": "Cincinnati"}
+)
 ```
+## Auto Research — Recursive Agent Example
 
-# LLM Apps {.section-slide background-image="pictures/spiti_valley.jpg" background-size="contain" background-position="center" background-color="#ffffff" background-opacity="0.5"}
+:::: {.columns}
 
-## Building LLM Applications
+::: {.column width="50%"}
+-   The core idea: give an AI agent a small but real LLM training setup and let it experiment autonomously overnight. It modifies the code, trains for 5 minutes, checks if the result improved.
+-   I forked this repo and ran it for our 591 project. The agent ran 20 experiments overnight and 2 saw small improvements in the target metric. [^4]
+:::
 
--   Core layers:
-    -   UX interface
-    -   orchestration layer
-    -   model + retrieval/tooling
-    -   observability/evals
--   Product quality depends more on system design than on prompt tricks alone.
+::: {.column width="50%"}
+<iframe src="https://platform.twitter.com/embed/Tweet.html?id=2031135152349524125" 
+        width="550" height="500" style="border:none;" allowfullscreen>
+</iframe>
+:::
 
-## Production Checklist
+::::
 
-1.  Prompt and context versioning
-2.  Guardrails and policy checks
-3.  Metrics: quality, latency, cost, safety
-4.  Tracing and replay for failures
-5.  Human escalation paths for high-risk tasks
+[^4]: *Auto Research Fork*. [github.com/fryan2503/autoresearch](https://github.com/fryan2503/autoresearch)
 
-# Looking Ahead {.section-slide background-image="pictures/star_trail.jpg" background-size="cover" background-opacity="0.35"}
 
-## Near-Term Direction
+# LLM Evals {.section-slide background-image="pictures/hall.jpg" background-size="cover" background-opacity="0.35"}
 
--   Better multimodal reasoning and real-time interaction.
--   Tighter integration between agents, tools, and enterprise data.
--   More standardization (MCP-like protocols, eval frameworks, trace formats).
--   Competitive advantage will come from proprietary data, evaluation rigor, and strong UX.
+## What Is Right or Wrong?
 
-## Closing
+## Randomness and Determinacy
 
--   Start with clear use cases.
--   Build retrieval and evals early.
--   Add agency gradually with strict controls.
--   Iterate quickly with production feedback loops.
+## Accuracy, Latency, Cost
+
+## LLM as a Judge
+
+## Golden Set (How Teams Build It)
+
+## Continuous Evals
