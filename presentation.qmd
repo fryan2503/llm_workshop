@@ -258,7 +258,10 @@ answer = llm(prompt)
 
 [^2]: Johnson, J., Douze, M., & Jégou, H. (2019). Billion-scale similarity search with GPUs. *IEEE Transactions on Big Data*, 7(3), 535–547. [github.com/facebookresearch/faiss](https://github.com/facebookresearch/faiss)
 
-
+## Chunking Strategies
+-  The way you split documents into chunks can make or break retrieval quality.
+- For example, our museum data, each object is a point in the vector store. But if we are working with long documents, we might want to chunk them into sections or paragraphs.
+-  Overlap is important to preserve context across chunk boundaries. A common heuristic is 200-300 tokens of overlap, but this depends on your data and retrieval needs.
 
 ## LangChain and LangGraph
 
@@ -435,12 +438,61 @@ result = await session.call_tool(         # "Do this thing"
 
 ## What Is Right or Wrong?
 
+-   Define task-specific rubrics before testing.
+-   Separate objective checks (exact match, schema validity) from subjective checks (tone, clarity).
+-   Require evidence/citations for factual outputs where possible.
+-   Without a rubric, you're grading with vibes.
+
+## Deterministic vs. Non-Deterministic Questions
+
+-   **Deterministic**: one correct answer. "How many paintings?" → 644. Gradeable with exact match. 
+-   **Non-deterministic**: many valid answers. "Describe the African art." Requires judgment.
+-   Most real-world RAG questions are non-deterministic — this is what makes LLM evals hard.
+-   Your golden set should include **both types** so you know where your system is strong and where it's fuzzy.
+
+| Type | Example | Grading |
+|---|---|---|
+| Deterministic | "How many paintings?" | Exact match / simple comparison |
+| Non-deterministic | "Describe the African art" | LLM-as-judge or human review |
+
 ## Randomness and Determinacy
+
+-   LLM outputs vary due to sampling and model uncertainty.
+-   `temperature=0` improves repeatability but does not guarantee identical output.
+-   Even the *same* deterministic question can get different wording across runs.
+-   This is why LLM evals require repeated runs and distributions, not single samples.
 
 ## Accuracy, Latency, Cost
 
+-   Quality alone is not enough; track all three.
+-   **Accuracy**: does the model answer correctly?
+-   **Latency**: fast enough for the user experience?
+-   **Cost**: sustainable per request and at scale?
+
 ## LLM as a Judge
 
-## Golden Set (How Teams Build It)
+-   Use a strong model to score outputs against a rubric.
+- LLM's are really good at spotting incosistencies between 2 given texts.
+-   Two criteria we'll use:
+    -   **Helpfulness**: Is the answer relevant and concise?
+    -   **Correctness**: Does it match the gold answer factually? This is more important.
+-   Watch for judge bias and rubric leakage. 
+-   There has been instances if the LLM knows it is being graded, it will try to cheat on the test or won't take it seriously. [^5]
+
+[^5]: Claude Opus cheating on browsecomp [Eval awareness in Claude Opus](https://www.anthropic.com/engineering/eval-awareness-browsecomp)
+
+
+
+
+## Golden Set (How We did it for the research project)
+
+1.  We had a team of 8 students, professors and phd candidates manually curate a set of 100 questions related to machinery, like a CNC lathe or Mill.
+2.  Our questions were non-determinitic only. 
+3.  Each question was sent to a subject matter expert (SME) for revision. We had a safety consultant review all the questions.
 
 ## Continuous Evals
+
+-   Notice the like/dislike buttons on ChatGPT responses? Those are user feedback signals that feed into OpenAI's eval system.
+-   Also i'm sure you notice the A/B tests now too 
+-   This is a good way to understand where the Agent failed and how to improve it.
+-   For example, if users consistently dislike responses to a certain question, that signals a weakness in the retrieval or generation for that query type. You can then add more examples of that question type to your eval set and iterate on improving it.

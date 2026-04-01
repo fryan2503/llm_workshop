@@ -1,0 +1,52 @@
+[
+  {
+    "question": "How many paintings are in the collection?",
+    "gold_answer": "There are 644 paintings in the collection.",
+    "type": "deterministic"
+  },
+  {
+    "question": "How many artworks did Ireland Belleek Pottery create?",
+    "gold_answer": "Ireland Belleek Pottery created 117 works in the collection.",
+    "type": "deterministic"
+  },
+  {
+    "question": "What medium did Adja Yunkers use for 'Untitled III'?",
+    "gold_answer": "Adja Yunkers used etching and screen print process on paper.",
+    "type": "deterministic"
+  },
+  {
+    "question": "How many artworks were donated by Walter I. Farmer?",
+    "gold_answer": "Walter I. Farmer donated 237 artworks to the collection.",
+    "type": "deterministic"
+  },
+  {
+    "question": "Is there a Paul Cadmus painting in the collection? If so, what is it called?",
+    "gold_answer": "Yes. 'The Guitarist' (1969) by Paul Cadmus.",
+    "type": "deterministic"
+  },
+  {
+    "question": "What artworks depict someone playing a musical instrument?",
+    "gold_answer": "The collection includes 'The Guitarist' by Paul Cadmus, 'Violin Player' by William Verplanck Birney, and 'Lady with a Lute' by Hugo Ballin, among others.",
+    "type": "non-deterministic"
+  },
+  {
+    "question": "Describe the African art in the collection.",
+    "gold_answer": "The collection includes works from various African cultures including Kuba textiles, North American indigenous art, and Pre-Columbian artifacts, spanning multiple centuries and media.",
+    "type": "non-deterministic"
+  },
+  {
+    "question": "What themes are represented in the modern and contemporary paintings?",
+    "gold_answer": "The modern and contemporary paintings cover a range of themes including abstract art, portraiture, landscapes, and figurative work from the 20th century and later.",
+    "type": "non-deterministic"
+  },
+  {
+    "question": "Are there any artworks that evoke loneliness or solitude?",
+    "gold_answer": "Several artworks in the collection depict solitary figures or contemplative scenes that may evoke feelings of loneliness or solitude.",
+    "type": "non-deterministic"
+  },
+  {
+    "question": "What can you tell me about the ancient Greek and Roman artifacts?",
+    "gold_answer": "The collection includes 255 ancient Greek and Roman artifacts such as vessels, cups, pyxides, and bronze objects, dating from circa 850 BCE to 300 CE.",
+    "type": "non-deterministic"
+  }
+]

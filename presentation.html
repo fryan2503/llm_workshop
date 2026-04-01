@@ -439,6 +439,14 @@ Ryan Singh
 </ul>
 <aside><ol class="aside-footnotes"><li id="fn2"><p>Johnson, J., Douze, M., &amp; Jégou, H. (2019). Billion-scale similarity search with GPUs. <em>IEEE Transactions on Big Data</em>, 7(3), 535–547. <a href="https://github.com/facebookresearch/faiss">github.com/facebookresearch/faiss</a></p></li></ol></aside></section>
 <section class="slide level2">
+<h2>Chunking Strategies</h2>
+<ul>
+<li>The way you split documents into chunks can make or break retrieval quality.</li>
+<li>For example, our museum data, each object is a point in the vector store. But if we are working with long documents, we might want to chunk them into sections or paragraphs.</li>
+<li>Overlap is important to preserve context across chunk boundaries. A common heuristic is 200-300 tokens of overlap, but this depends on your data and retrieval needs.</li>
+</ul>
+</section>
+<section class="slide level2">
 <h2>LangChain and LangGraph</h2>
 <ul>
 <li><strong>LangChain</strong> provides modular abstractions — prompts, retrievers, tools, and chains — so you can swap components without rewriting glue code.</li>
@@ -618,21 +626,96 @@ Ryan Singh
 </section>
 <section class="slide level2">
 <h2>What Is Right or Wrong?</h2>
+<ul>
+<li>Define task-specific rubrics before testing.</li>
+<li>Separate objective checks (exact match, schema validity) from subjective checks (tone, clarity).</li>
+<li>Require evidence/citations for factual outputs where possible.</li>
+<li>Without a rubric, you’re grading with vibes.</li>
+</ul>
+</section>
+<section class="slide level2">
+<h2>Deterministic vs.&nbsp;Non-Deterministic Questions</h2>
+<ul>
+<li><strong>Deterministic</strong>: one correct answer. “How many paintings?” → 644. Gradeable with exact match.</li>
+<li><strong>Non-deterministic</strong>: many valid answers. “Describe the African art.” Requires judgment.</li>
+<li>Most real-world RAG questions are non-deterministic — this is what makes LLM evals hard.</li>
+<li>Your golden set should include <strong>both types</strong> so you know where your system is strong and where it’s fuzzy.</li>
+</ul>
+<table class="caption-top">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Example</th>
+<th>Grading</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Deterministic</td>
+<td>“How many paintings?”</td>
+<td>Exact match / simple comparison</td>
+</tr>
+<tr class="even">
+<td>Non-deterministic</td>
+<td>“Describe the African art”</td>
+<td>LLM-as-judge or human review</td>
+</tr>
+</tbody>
+</table>
 </section>
 <section class="slide level2">
 <h2>Randomness and Determinacy</h2>
+<ul>
+<li>LLM outputs vary due to sampling and model uncertainty.</li>
+<li><code>temperature=0</code> improves repeatability but does not guarantee identical output.</li>
+<li>Even the <em>same</em> deterministic question can get different wording across runs.</li>
+<li>This is why LLM evals require repeated runs and distributions, not single samples.</li>
+</ul>
 </section>
 <section class="slide level2">
 <h2>Accuracy, Latency, Cost</h2>
+<ul>
+<li>Quality alone is not enough; track all three.</li>
+<li><strong>Accuracy</strong>: does the model answer correctly?</li>
+<li><strong>Latency</strong>: fast enough for the user experience?</li>
+<li><strong>Cost</strong>: sustainable per request and at scale?</li>
+</ul>
 </section>
 <section class="slide level2">
 <h2>LLM as a Judge</h2>
-</section>
+<ul>
+<li>Use a strong model to score outputs against a rubric.</li>
+<li>LLM’s are really good at spotting incosistencies between 2 given texts.</li>
+<li>Two criteria we’ll use:
+<ul>
+<li><strong>Helpfulness</strong>: Is the answer relevant and concise?</li>
+<li><strong>Correctness</strong>: Does it match the gold answer factually? This is more important.</li>
+</ul></li>
+<li>Watch for judge bias and rubric leakage.</li>
+<li>There has been instances if the LLM knows it is being graded, it will try to cheat on the test or won’t take it seriously. <sup>1</sup></li>
+</ul>
+<aside><ol class="aside-footnotes"><li id="fn5"><p>Claude Opus cheating on browsecomp <a href="https://www.anthropic.com/engineering/eval-awareness-browsecomp">Eval awareness in Claude Opus</a></p></li></ol></aside></section>
 <section class="slide level2">
-<h2>Golden Set (How Teams Build It)</h2>
+<h2>Golden Set (How We did it for the research project)</h2>
+<ol type="1">
+<li>We had a team of 8 students, professors and phd candidates manually curate a set of 100 questions related to machinery, like a CNC lathe or Mill.</li>
+<li>Our questions were non-determinitic only.</li>
+<li>Each question was sent to a subject matter expert (SME) for revision. We had a safety consultant review all the questions.</li>
+</ol>
 </section>
 <section class="slide level2">
 <h2>Continuous Evals</h2>
+<ul>
+<li>Notice the like/dislike buttons on ChatGPT responses? Those are user feedback signals that feed into OpenAI’s eval system.</li>
+<li>Also i’m sure you notice the A/B tests now too</li>
+<li>This is a good way to understand where the Agent failed and how to improve it.</li>
+<li>For example, if users consistently dislike responses to a certain question, that signals a weakness in the retrieval or generation for that query type. You can then add more examples of that question type to your eval set and iterate on improving it.</li>
+</ul>
 
 </section></section>
 
