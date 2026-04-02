@@ -25,6 +25,7 @@ format:
 2.  RAG (Retrieval-Augmented Generation)
 3.  LLM Agents
 4.  LLM Evals
+notes
 
 # LLM Foundations {.section-slide background-image="pictures/nyc_wtc.jpg" background-size="cover" background-opacity="0.35"}
 
