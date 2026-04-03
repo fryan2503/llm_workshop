@@ -1,7 +1,7 @@
 [
   {
     "question": "How many paintings are in the collection?",
-    "gold_answer": "There are 644 paintings in the collection.",
+    "gold_answer": "There are 664 paintings in the collection.",
     "type": "deterministic"
   },
   {

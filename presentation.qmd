@@ -25,47 +25,84 @@ format:
 2.  RAG (Retrieval-Augmented Generation)
 3.  LLM Agents
 4.  LLM Evals
-notes
 
 # LLM Foundations {.section-slide background-image="pictures/nyc_wtc.jpg" background-size="cover" background-opacity="0.35"}
+
+## About SIGHT 
+
+**Safety Immersion and Gamified Hazard Training for Industry 5.0 Workers**  
+$1.5M Ohio BWC grant | Miami University | 2025–2027
+
+AI + VR + AR safety training platform for Ohio manufacturing workers.  
+Two components: gamified VR hazard simulation + real-time AR coaching.
+How can we create AI based training to prevent workplace injuries in manufacturing?
+
+## My role in SIGHT 
+
+- Create and maintain the LLM/RAG backend that powers the AR coaching component.
+- Evaluate the responses from the LLM/RAG. How do you know if the LLM is giving good advice? How do you improve it?
+- In the course of this project, we created a benchmark for questions in the manufacturing domain, and we will be using that benchmark. 
+
+Test out [here](https://mou-virtual-demo.mkms.io/)
+
+## Before we begin
+
+This workshop has three goals:
+
+-   **Make you conversational.** By the end, you should be able to hold your own in any discussion about LLMs, RAG, and agents. Hopefully give you more confidence in the workplace. 
+-   **Learn the vocabulary.** Terms like embeddings, vector stores, temperature, and MCP should feel familiar, not foreign. If we ran an AI trivia round after this, you should see a statistically significant improvement.
+-   **Concepts >> code.** I will move through code quickly. If you get lost in the syntax, that is fine — an LLM can write the code for you. What it cannot do is decide *when* and *why* to use these patterns.
+
+## Why Should You Care?
+
+-   Every company sits on mountains of unstructured data: emails, docs, Slack threads, support tickets.
+-   LLMs + RAG let you build systems that *understand* that data, not just keyword-search it.
+-   **Running example:** A company receives 50,000+ customer emails a year. A new support rep needs to answer: "What's our return policy for international orders?" Today they dig through folders. With RAG, they ask in plain English and get a grounded answer in seconds.
+
+::: {.notes}
+This email example carries through the presentation — reference it again during retrieval patterns and evals.
+:::
 
 ## What Is an LLM?
 
 -   A large language model predicts the next token given some initial tokens.
 -   Training objective: minimize next-token prediction error across massive text corpora.
 
-LLM neural networks
+How an LLM processes text:
 
-> Text → Tokens → Token IDs → Embeddings → Transformer
+> Text → Tokens → Token IDs → Embeddings → Transformer -> Neural Network -> Decode -> Tokens → Text
 
-## LLM Arhitecture
+::: {.notes}
+Open the code-along notebook. Show the tokenization cell — encode a sentence and count tokens. Highlight that punctuation and spaces are tokens too.
+:::
+
+## LLM Architecture
 
 ![Source: Geeks for Geeks](https://media.geeksforgeeks.org/wp-content/uploads/20251027113102226370/input_data.webp)
 
-## Tokenization
+## 1. Tokenization
 
 -   Models do not read words directly; they read **tokens**.
 -   A token can be a full word, subword, punctuation mark, or whitespace chunk.
 -   Pricing, latency, and context limits are token-based.
     -   1 token ≈ 0.75 words or 1.33 $\times$ words
-    -   \$2.50 / 1M tokens \| CI: \$0.25 / 1M tokens \| O: \$15.00 / 1M tokens
+    -   \$2.50 / 1M tokens (input) \| \$0.25 / 1M tokens (cached input) \| \$15.00 / 1M tokens (output)
 -   GPT-2's vocabulary has 50,257 unique tokens. [^1]
 
 [^1]: Cho et al. (2024). *Transformer Explainer*. IEEE VIS. [poloclub.github.io/transformer-explainer](https://poloclub.github.io/transformer-explainer)
 
-## Tokenization
+## 1. Tokenization
 
 -   Same sentence can produce different token counts across tokenizers.
 
 ``` python
 text = "NotebookLM is a RAG app."
-# conceptually:
-# ["Notebook", "LM", " is", " a", " R", "AG", " app", "."]
+# ['Note', 'book', 'LM', ' is', ' a', ' R', 'AG', ' app', '.']
 ```
 
-## Tokenization
+## 1. Tokenization
 
-Open AI tokenizer
+OpenAI Tokenizer
 
 *https://platform.openai.com/tokenizer*
 
@@ -73,10 +110,14 @@ Open AI tokenizer
 
 </iframe>
 
-## Embedding Layers
+## 2. Embedding Layers
 
 -   Map discrete token IDs to continuous vector space.
 -   Capture **semantic** relationships and contextual nuances.
+
+::: {.notes}
+Notebook: run the SentenceTransformer cell. Encode two similar sentences and show cosine similarity is high (~0.59) vs. an unrelated sentence (~0.0). This is what makes semantic search possible.
+:::
 
 ![source: CauserWriter](https://causewriter.ai/wp-content/uploads/2023/08/image-2-1024x483.png)
 
@@ -84,7 +125,7 @@ Open AI tokenizer
 *Semantic: relating to meaning in language or logic.*
 :::
 
-## Embedding Layers
+## 2. Embedding Layers
 
 Great Video from 3blue1brown
 
@@ -110,24 +151,22 @@ Can we use this for classification?
 [*Full 3Blue1Brown Playlist*](https://www.youtube.com/watch?v=aircAruvnKk&list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi)
 :::
 
-## Transformers
+## 3. Transformers
 Example: 
 
 - "I deposited money at the _ _ _ _ "
 
 - "I sat on the river _ _ _ _"
 
-\n
-
--   Text-generative Transformer models operate on the principle of next-token prediction: given a text prompt from the user, what is the most probable next token (a word or part of a word) that will follow this input
-- Transformes allows the LLM to understand understand things like based on *ALL* the tokens I have seen, what should each token mean in this specific *context*. 
+-   Text-generative Transformer models operate on the principle of next-token prediction: given a text prompt from the user, what is the most probable next token (a word or part of a word) that will follow this input.
+-   Transformers allow the LLM to understand things like: based on *ALL* the tokens I have seen, what should each token mean in this specific *context*.
 
 
-## Transformers
+## 3. Transformers
 
 - When I predict the next token, how much attention should the model pay to all the preceding tokens? 
 
-- Attention blocks in tranformer models allow all tokens to talk to each other. 
+- Attention blocks in transformer models allow all tokens to talk to each other.
 
 - Within each Transformer block, the multi-head self-attention layer is what allows tokens to communicate with each other. 
 
@@ -135,7 +174,7 @@ Example:
 
 
 
-## Transformers 
+## 3. Transformers 
 
 ::: {style="font-size: 0.5em; text-align: center;"}
 *Source: Cho et al. (2024). Transformer Explainer. IEEE VIS. — [Click here](https://poloclub.github.io/transformer-explainer/){target="_blank"}*
@@ -151,7 +190,7 @@ Example:
 
 
 
-## Transformers
+## 3. Transformers
 
 Attention Is All You Need
 
@@ -176,15 +215,20 @@ Attention Is All You Need
 ## The main take-aways
 
 
-- LLM's are just recursively predicting the next token. 
+- LLMs are just recursively predicting the next token.
 
-- Preceeding tokens dictate the output proba. By adding "OH," probabbilty increases by double.
+- Preceding tokens dictate the output probability. By adding "OH," probability increases by double.
 
 - Temp changes the probability distribution of the predicted tokens. Higher temp = more randomness.
 
+::: {.notes}
+Notebook: run the temperature/softmax cell. Show how temp=0.3 concentrates probability (96% on top token) vs. temp=10 flattens it (36/33/31). This is the intuition behind all the temp settings we'll use later.
+:::
+
 ## ChatGPT API
 
--   `temperature=0`: most deterministic decoding (lowest randomness).
+-   `temperature=0`: most deterministic. Use for evals, grading, data extraction — anywhere reproducibility matters. In SIGHT, our LLM-as-judge uses `temp=0` so the same question gets the same grade every run.
+-   `temperature=0.7–1.0`: more creative, varied outputs. Use for brainstorming, marketing copy, conversational agents.
 -   `max_tokens`: hard cap on generated output length.
 -   `reasoning_effort`: controls how much internal reasoning budget is used.
 -   Tradeoff: higher quality often means more latency and cost.
@@ -199,9 +243,13 @@ response = client.responses.create(
 )
 ```
 
+::: {.notes}
+Key point: if you're building anything auditable or reproducible, set temp=0. We'll see this in the evals section — the LLM-as-judge always runs at temp=0. Code-along: run the softmax cell to see how temp changes the probability distribution.
+:::
+
 ## State of Open-Source LLMs
 
--   Strong families: Llama, Qwen, Mistral, DeepSeek, and domain-specific variants.
+-   Strong families: Gemma 3, Llama, Qwen, Mistral, DeepSeek, and domain-specific variants.
 -   Practical benefits: self-hosting, lower marginal cost, data residency control.
 -   Typical constraints: hardware needs, ops complexity, eval/finetune overhead.
 -   Common pattern: open-source for retrieval/structured steps, frontier API for hardest reasoning.
@@ -209,18 +257,74 @@ response = client.responses.create(
 
 # RAG {.section-slide background-image="pictures/mumbai_x_pan.webp" background-size="cover" background-position="center" background-opacity="0.35"}
 
+## The Same Model, Two Very Different Answers
+
+:::: {.columns}
+
+::: {.column width="50%"}
+### Without Context
+```python
+response = client.responses.create(
+    model="gpt-4.1-mini",
+    input="What are the three software 
+    safety modes on the UR5e cobot?",
+    temperature=0,
+)
+```
+
+> ❌ The model will confidently list modes like "Safeguard," "Emergency," or "Automatic" — plausible-sounding but wrong.
+:::
+
+::: {.column width="50%"}
+### With Retrieved Context
+```python
+context = """
+Some key excerpts from the UR5e manual
+"""
+
+response = client.responses.create(
+    model="gpt-4.1-mini",
+    input=f"Answer using ONLY this context:
+    {context}
+    
+    Question: What are the three software 
+    safety modes on the UR5e cobot?",
+    temperature=0,
+)
+```
+
+> ✅ Normal, Reduced, Recovery — grounded in the manual.
+:::
+
+::::
+
+> The model didn't get smarter. We just gave it the right context. That's RAG.
+
 ## Grounding to the Truth
 
--   We know that Base LLM knowledge – especially smaller models – can be stale or incomplete. Demonstrated by the Miami Example. 
--   We also know that preceeding tokens play a pivital role. Prompting and context becomes important. Think back to the "Miami(OH)," example. 
+-   We know that base LLM knowledge — especially smaller models — can be stale or incomplete. Ask a small model "Where is Miami University?" and it may say Florida.
+-   We also know that preceding tokens play a pivotal role. Add "Ohio" to the prompt and the answer changes entirely. Prompting and context matter.
 
-- I also assume that you know that giving your notes to an LLM as context and asking for a study guide is better than just asking for a study guide on a certain topic. 
+- You probably already know that giving your notes to an LLM as context and asking for a study guide is better than just asking for a study guide on a certain topic.
   
 
 ::: {.callout-note icon="false"}
 ## 🤔 Question
 
-Is there a way, everytime we ask LLM a question, it injects the right context into the prompt?
+Is there a way, every time we ask an LLM a question, it injects the right context into the prompt?
+:::
+
+## Before Semantic Search
+
+-   **Keyword / full-text search** (TF-IDF, BM25): matches exact terms only. "gelatin silver print" never matches "black and white photo."
+-   **SQL LIKE / regex**: rigid, requires knowing the schema and exact vocabulary.
+-   **Manual tagging / taxonomy**: humans hand-label every record. Expensive, inconsistent, doesn't scale.
+-   **Boolean search** (AND/OR/NOT): better than raw keyword, but still no understanding of meaning.
+
+> These all break when data is messy, incomplete, or described inconsistently — which is most real-world data.
+
+::: {.notes}
+Connect to the email example: keyword search for "shipping delay" misses emails that say "late delivery." This is the gap that embeddings and vector search fill.
 :::
 
 ## Retrieval Patterns: SQL & Vector
@@ -230,12 +334,18 @@ Is there a way, everytime we ask LLM a question, it injects the right context in
     -   filtered records
     
 -   **Vector retrieval** for semantic relevance:
-    -   semantic matching and fuzzy mathing
+    -   semantic matching and fuzzy matching
     -   unstructured text
 
 
-::: {.callout}
-Can you combine both in the same app? 
+::: {.callout-note icon="false"}
+## 🤔 Question
+
+Say you are building a RAG system for all your emails you have received (50000+). When would you use SQL retrieval vs. vector retrieval?
+:::
+
+::: {.notes}
+Bring back the email example: SQL = "Show me all emails from client X in March." Vector = "Find emails where customers complained about shipping delays" — even if the exact words differ.
 :::
 
 ## Minimal RAG Flow (Pseudo-code)
@@ -248,21 +358,19 @@ prompt = f"Answer using only this context:\n{context}\n\nQuestion: {query}"
 answer = llm(prompt)
 ```
 
-## Vector Stores
+## LangGraph in 30 Seconds
 
--   A vector store indexes embedding vectors alongside metadata for fast nearest-neighbor lookup.
--   At query time, your question is embedded into the same vector space, and the store returns the closest matching chunks.
--   Pre-filters (date, source, department) narrow the search space before similarity ranking runs.
--   Chunk size, overlap, and reranking strategy directly affect recall and precision — these are tunable knobs.
--   We will be using FAISS in our demo today. [^2]
--   Other popular options include Pinecone, MongoDB, Chromas
+Think of LangGraph like a **flowchart you can run**.
 
-[^2]: Johnson, J., Douze, M., & Jégou, H. (2019). Billion-scale similarity search with GPUs. *IEEE Transactions on Big Data*, 7(3), 535–547. [github.com/facebookresearch/faiss](https://github.com/facebookresearch/faiss)
+-   Each **box** (node) is a step: retrieve docs, call an LLM, run a SQL query.
+-   Each **arrow** (edge) says what happens next — and it can branch based on conditions.
+-   A **shared clipboard** (state) passes information between steps so each box knows what the previous one did.
 
-## Chunking Strategies
--  The way you split documents into chunks can make or break retrieval quality.
-- For example, our museum data, each object is a point in the vector store. But if we are working with long documents, we might want to chunk them into sections or paragraphs.
--  Overlap is important to preserve context across chunk boundaries. A common heuristic is 200-300 tokens of overlap, but this depends on your data and retrieval needs.
+> If LangChain is a recipe (step 1, step 2, step 3), LangGraph is a *choose-your-own-adventure* book.
+
+::: {.notes}
+Keep it simple here. The code-along has a two-node graph (retrieve → generate) that makes this concrete. The Appendix slides have TypedDict details for anyone who wants to go deeper.
+:::
 
 ## LangChain and LangGraph
 
@@ -270,8 +378,52 @@ answer = llm(prompt)
 -   **LangGraph** extends this with stateful, graph-based workflows: define nodes, edges, and control flow for multi-step agentic pipelines.
 -   Rule of thumb: if your task is a single retrieval → generate pass, LangChain alone is fine. If you need branching, retries, or loops, reach for LangGraph.
 
+> Think of these like *lego block* libraries for building LLM apps. They handle the nuisance code so you can focus on the architecture and logic of your application.
 
-## LangGraph: Stateful Agent Graphs
+## RAG in Practice: Art Museum Search 
+
+This is the case we will be working with in the code-along.
+
+-   Curators had to write exact SQL queries to search the collection — but records were often incomplete, inconsistently tagged or missing metadata entirely.
+-   Exact-match SQL fails when the data is messy. A search for "black and white portrait photography" returns nothing if the record only says "gelatin silver print, 1940."
+    -  Vector Embeddings capture semantic similarity, so the retriever can surface relevant records 
+-   The goal: replace rigid SQL lookup with natural language retrieval.[^3]
+
+::: {.notes}
+Switch to the code-along now and stay there through the RAG and Agents sections. Show the "without RAG vs. with RAG" cells first, then walk through vector store loading and retriever.invoke().
+:::
+
+[^3]: Github Repo *RAG Omeka: Natural Language Retrieval for Art Museum Collections*. [github.com/fryan2503/rag_omeka](https://github.com/fryan2503/rag_omeka)
+
+
+## Vector Stores
+
+-   A vector store indexes embedding vectors alongside metadata for fast nearest-neighbor lookup.
+-   At query time, your question is embedded into the same vector space, and the store returns the closest matching chunks.
+-   Pre-filters (date, source, department) narrow the search space before similarity ranking runs.
+-   Chunk size, overlap, and reranking strategy directly affect recall and precision — these are tunable knobs.
+-   We will be using FAISS in our demo today. [^2]
+-   Other popular options include Pinecone, MongoDB, Chroma
+
+::: {.notes}
+Notebook: show the FAISS load cell and run retriever.invoke("Paul Cadmus"). Point out the metadata returned — this is what the LLM uses as context.
+:::
+
+[^2]: Johnson, J., Douze, M., & Jégou, H. (2019). Billion-scale similarity search with GPUs. *IEEE Transactions on Big Data*, 7(3), 535–547. [github.com/facebookresearch/faiss](https://github.com/facebookresearch/faiss)
+
+## Visualizing the Vector Store
+
+<iframe src="assets/vectorstore_3d.html" width="100%" height="600px" style="border:none;">
+</iframe>
+
+## Chunking Strategies
+-  The way you split documents into chunks can make or break retrieval quality.
+- For example, in our museum data each object is a single point in the vector store. But if we are working with long documents, we might want to chunk them into sections or paragraphs.
+-  Overlap is important to preserve context across chunk boundaries. A common heuristic is 200-300 tokens of overlap, but this depends on your data and retrieval needs.
+
+
+
+## Appendix LangGraph: Stateful Agent Graphs
 
 :::: {.columns}
 
@@ -305,7 +457,7 @@ display(Image(graph.get_graph().draw_mermaid_png()))
 ::::
 
 
-## State in LangGraph
+## Appendix State in LangGraph
 
 -   State is a **`TypedDict`** — a typed Python dict that every node in the graph can read and write to.
 -   Nodes return a *partial* dict with only the keys they want to update; LangGraph merges it back automatically.
@@ -349,19 +501,7 @@ builder.add_conditional_edges(
     lambda s: "generate" if s["relevant"] else "retrieve",
 )
 ```
-## RAG in Practice: Art Museum Search 
 
--   Curators had to write exact SQL queries to search the collection — but records were often incomplete, inconsistently tagged or missing metadata entirely.
--   Exact-match SQL fails when the data is messy. A search for "black and white portrait photography" returns nothing if the record only says "gelatin silver print, 1940."
-    -  Vector Embeddings capture semantic similarity, so the retriever can surface relevant records 
--   The goal: replace rigid SQL lookup with natural language retrieval.[^3]
-
-[^3]: Github Repo *RAG Omeka: Natural Language Retrieval for Art Museum Collections*. [github.com/fryan2503/rag_omeka](https://github.com/fryan2503/rag_omeka)
-
-## Visualizing the Vector Store
-
-<iframe src="assets/vectorstore_3d.html" width="100%" height="600px" style="border:none;">
-</iframe>
 
 ## NotebookLM Is a RAG App
 
@@ -370,14 +510,16 @@ builder.add_conditional_edges(
 -   It answers with source-grounded context.
 -   This is RAG behavior, wrapped in a consumer-friendly interface.
 
-
+::: {.notes}
+Good transition point. Summarize: we just built in code exactly what NotebookLM does under the hood — embed docs, retrieve relevant chunks, generate grounded answers.
+:::
 
 
 # LLM Agents {.section-slide background-image="pictures/sb_audi.jpg" background-size="cover" background-opacity="0.35"}
 
 ## Agency
 
--   an agent is an LLM that can autonomously take actions in a loop (tool use, code execution, web browsing), plan multi-step tasks, and course-correct based on feedback
+-   An agent is an LLM that can autonomously take actions in a loop (tool use, code execution, web browsing), plan multi-step tasks, and course-correct based on feedback
 -   Agentic behavior is useful when tasks require multi-step decisions.
 
 ## Simple Agent: SQL Tooling
@@ -394,8 +536,9 @@ builder.add_conditional_edges(
 
 -  MCP standardizes how models discover and use external tools/context.
 -  Think of it as a common interface between model runtimes and tool servers.
--  Before USB C and Thunderbolt, every device had its own weird plug. MCP is the USB C of model-tool integration.
-- That's what AI tool integration was like before MCP — every tool (Slack, Google Drive, Notion) needed its own custom integration code.
+-  Before USB-C, every device had its own weird plug. MCP is the USB-C of model-tool integration.
+-  Before MCP, every tool (Slack, Google Drive, Notion) needed its own custom integration code.
+-  Real-world MCP servers already exist for: Slack (search channels), GitHub (read PRs), Postgres (run queries), file system (read/write files).
 
 
 ## MCP Example 
@@ -415,6 +558,15 @@ result = await session.call_tool(         # "Do this thing"
     "get_weather", {"city": "Cincinnati"}
 )
 ```
+
+## MCP: Explore the Spec
+
+-   MCP is an open standard — browse the full spec and available integrations below.
+
+<iframe src="https://modelcontextprotocol.io/introduction"
+        width="100%" height="550px" style="border:none;">
+</iframe>
+
 ## Auto Research — Recursive Agent Example
 
 :::: {.columns}
@@ -473,27 +625,44 @@ result = await session.call_tool(         # "Do this thing"
 ## LLM as a Judge
 
 -   Use a strong model to score outputs against a rubric.
-- LLM's are really good at spotting incosistencies between 2 given texts.
+- LLMs are really good at spotting inconsistencies between 2 given texts.
 -   Two criteria we'll use:
     -   **Helpfulness**: Is the answer relevant and concise?
     -   **Correctness**: Does it match the gold answer factually? This is more important.
 -   Watch for judge bias and rubric leakage. 
--   There has been instances if the LLM knows it is being graded, it will try to cheat on the test or won't take it seriously. [^5]
+-   There have been instances where an LLM knows it is being graded and will try to cheat on the test or won't take it seriously. [^5]
 
 [^5]: Claude Opus cheating on browsecomp [Eval awareness in Claude Opus](https://www.anthropic.com/engineering/eval-awareness-browsecomp)
 
+::: {.notes}
+Notebook: show the golden set JSON (10 questions, mix of deterministic and non-deterministic). Then run the eval loop and show the helpfulness/correctness results table. Remind them temp=0 is used here for reproducibility.
+:::
 
-
-
-## Golden Set (How We did it for the research project)
+## Golden Set (How We Did It for the Research Project)
 
 1.  We had a team of 8 students, professors and phd candidates manually curate a set of 100 questions related to machinery, like a CNC lathe or Mill.
-2.  Our questions were non-determinitic only. 
+2.  Our questions were non-deterministic only.
 3.  Each question was sent to a subject matter expert (SME) for revision. We had a safety consultant review all the questions.
 
 ## Continuous Evals
 
 -   Notice the like/dislike buttons on ChatGPT responses? Those are user feedback signals that feed into OpenAI's eval system.
--   Also i'm sure you notice the A/B tests now too 
+-   Also, I'm sure you notice the A/B tests now too.
 -   This is a good way to understand where the Agent failed and how to improve it.
 -   For example, if users consistently dislike responses to a certain question, that signals a weakness in the retrieval or generation for that query type. You can then add more examples of that question type to your eval set and iterate on improving it.
+
+::: {.notes}
+Final takeaway: evals are never done. The golden set is your starting point, but production feedback (thumbs up/down, A/B tests) is the continuous loop. Think of it like the email company — you keep adding failure cases to your eval set as users find edge cases.
+:::
+
+## What to Try Next
+
+-   **BUILD BUILD BUILD** there is no substitute for hands-on experience. Use coding agents in a code. 
+-   **Fork the code-along** and swap in your own data (emails, reports, tickets).
+-   **Look at cool projects**: https://github.com/kyrolabs/awesome-langchain and  https://streamlit.io/gallery
+
+> The best way to learn this stuff is to build something small and iterate. 
+
+::: {.notes}
+Tie it together: we started with tokens, built up to RAG, added agents, and evaluated the whole thing. The email example showed why it matters. The art museum showed how to build it. Now go build your own.
+:::

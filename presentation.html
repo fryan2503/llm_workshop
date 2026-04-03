@@ -210,7 +210,7 @@ Ryan Singh
 <li>LLM Foundations</li>
 <li>RAG (Retrieval-Augmented Generation)</li>
 <li>LLM Agents</li>
-<li>LLM Evals notes</li>
+<li>LLM Evals</li>
 </ol>
 </section>
 
@@ -220,62 +220,133 @@ Ryan Singh
 
 </section>
 <section class="slide level2">
+<h2>About SIGHT</h2>
+<p><strong>Safety Immersion and Gamified Hazard Training for Industry 5.0 Workers</strong><br>
+$1.5M Ohio BWC grant | Miami University | 2025–2027</p>
+<p>AI + VR + AR safety training platform for Ohio manufacturing workers.<br>
+Two components: gamified VR hazard simulation + real-time AR coaching. How can we create AI based training to prevent workplace injuries in manufacturing?</p>
+</section>
+<section class="slide level2">
+<h2>My role in SIGHT</h2>
+<ul>
+<li>Create and maintain the LLM/RAG backend that powers the AR coaching component.</li>
+<li>Evaluate the responses from the LLM/RAG. How do you know if the LLM is giving good advice? How do you improve it?</li>
+<li>In the course of this project, we created a benchmark for questions in the manufacturing domain, and we will be using that benchmark.</li>
+</ul>
+<p>Test out <a href="https://mou-virtual-demo.mkms.io/">here</a></p>
+</section>
+<section class="slide level2">
+<h2>Before we begin</h2>
+<p>This workshop has three goals:</p>
+<ul>
+<li><strong>Make you conversational.</strong> By the end, you should be able to hold your own in any discussion about LLMs, RAG, and agents. Hopefully give you more confidence in the workplace.</li>
+<li><strong>Learn the vocabulary.</strong> Terms like embeddings, vector stores, temperature, and MCP should feel familiar, not foreign. If we ran an AI trivia round after this, you should see a statistically significant improvement.</li>
+<li><strong>Concepts &gt;&gt; code.</strong> I will move through code quickly. If you get lost in the syntax, that is fine — an LLM can write the code for you. What it cannot do is decide <em>when</em> and <em>why</em> to use these patterns.</li>
+</ul>
+</section>
+<section class="slide level2">
+<h2>Why Should You Care?</h2>
+<ul>
+<li>Every company sits on mountains of unstructured data: emails, docs, Slack threads, support tickets.</li>
+<li>LLMs + RAG let you build systems that <em>understand</em> that data, not just keyword-search it.</li>
+<li><strong>Running example:</strong> A company receives 50,000+ customer emails a year. A new support rep needs to answer: “What’s our return policy for international orders?” Today they dig through folders. With RAG, they ask in plain English and get a grounded answer in seconds.</li>
+</ul>
+<aside class="notes">
+<p>This email example carries through the presentation — reference it again during retrieval patterns and evals.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section class="slide level2">
 <h2>What Is an LLM?</h2>
 <ul>
 <li>A large language model predicts the next token given some initial tokens.</li>
 <li>Training objective: minimize next-token prediction error across massive text corpora.</li>
 </ul>
-<p>LLM neural networks</p>
+<p>How an LLM processes text:</p>
 <blockquote>
-<p>Text → Tokens → Token IDs → Embeddings → Transformer</p>
+<p>Text → Tokens → Token IDs → Embeddings → Transformer -&gt; Neural Network -&gt; Decode -&gt; Tokens → Text</p>
 </blockquote>
+<aside class="notes">
+<p>Open the code-along notebook. Show the tokenization cell — encode a sentence and count tokens. Highlight that punctuation and spaces are tokens too.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
 <section class="slide level2">
-<h2>LLM Arhitecture</h2>
+<h2>LLM Architecture</h2>
 
 <img data-src="https://media.geeksforgeeks.org/wp-content/uploads/20251027113102226370/input_data.webp" class="r-stretch quarto-figure-center"><p class="caption">Source: Geeks for Geeks</p></section>
 <section class="slide level2">
-<h2>Tokenization</h2>
+<h2>1. Tokenization</h2>
 <ul>
 <li>Models do not read words directly; they read <strong>tokens</strong>.</li>
 <li>A token can be a full word, subword, punctuation mark, or whitespace chunk.</li>
 <li>Pricing, latency, and context limits are token-based.
 <ul>
 <li>1 token ≈ 0.75 words or 1.33 <span class="math inline">\(\times\)</span> words</li>
-<li>$2.50 / 1M tokens | CI: $0.25 / 1M tokens | O: $15.00 / 1M tokens</li>
+<li>$2.50 / 1M tokens (input) | $0.25 / 1M tokens (cached input) | $15.00 / 1M tokens (output)</li>
 </ul></li>
 <li>GPT-2’s vocabulary has 50,257 unique tokens. <sup>1</sup></li>
 </ul>
 <aside><ol class="aside-footnotes"><li id="fn1"><p>Cho et al.&nbsp;(2024). <em>Transformer Explainer</em>. IEEE VIS. <a href="https://poloclub.github.io/transformer-explainer">poloclub.github.io/transformer-explainer</a></p></li></ol></aside></section>
 <section class="slide level2">
-<h2>Tokenization</h2>
+<h2>1. Tokenization</h2>
 <ul>
 <li>Same sentence can produce different token counts across tokenizers.</li>
 </ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href=""></a>text <span class="op">=</span> <span class="st">"NotebookLM is a RAG app."</span></span>
-<span id="cb1-2"><a href=""></a><span class="co"># conceptually:</span></span>
-<span id="cb1-3"><a href=""></a><span class="co"># ["Notebook", "LM", " is", " a", " R", "AG", " app", "."]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-2"><a href=""></a><span class="co"># ['Note', 'book', 'LM', ' is', ' a', ' R', 'AG', ' app', '.']</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="slide level2">
-<h2>Tokenization</h2>
-<p>Open AI tokenizer</p>
+<h2>1. Tokenization</h2>
+<p>OpenAI Tokenizer</p>
 <p><em>https://platform.openai.com/tokenizer</em></p>
 <iframe src="https://tiktokenizer.vercel.app" width="100%" height="600px" style="border:none;">
 </iframe>
 </section>
 <section class="slide level2">
-<h2>Embedding Layers</h2>
+<h2>2. Embedding Layers</h2>
 <ul>
 <li>Map discrete token IDs to continuous vector space.</li>
 <li>Capture <strong>semantic</strong> relationships and contextual nuances.</li>
 </ul>
+<aside class="notes">
+<p>Notebook: run the SentenceTransformer cell. Encode two similar sentences and show cosine similarity is high (~0.59) vs.&nbsp;an unrelated sentence (~0.0). This is what makes semantic search possible.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 
 <img data-src="https://causewriter.ai/wp-content/uploads/2023/08/image-2-1024x483.png" class="r-stretch quarto-figure-center"><p class="caption">source: CauserWriter</p><div style="font-size: 0.5em;">
 <p><em>Semantic: relating to meaning in language or logic.</em></p>
 </div>
 </section>
 <section class="slide level2">
-<h2>Embedding Layers</h2>
+<h2>2. Embedding Layers</h2>
 <p>Great Video from 3blue1brown</p>
 <div class="columns">
 <div class="column" style="width:40%;">
@@ -299,28 +370,26 @@ Ryan Singh
 </div>
 </section>
 <section class="slide level2">
-<h2>Transformers</h2>
+<h2>3. Transformers</h2>
 <p>Example:</p>
 <ul>
 <li><p>“I deposited money at the _ _ _ _”</p></li>
 <li><p>“I sat on the river _ _ _ _”</p></li>
-</ul>
-<ul>
-<li>Text-generative Transformer models operate on the principle of next-token prediction: given a text prompt from the user, what is the most probable next token (a word or part of a word) that will follow this input</li>
-<li>Transformes allows the LLM to understand understand things like based on <em>ALL</em> the tokens I have seen, what should each token mean in this specific <em>context</em>.</li>
+<li><p>Text-generative Transformer models operate on the principle of next-token prediction: given a text prompt from the user, what is the most probable next token (a word or part of a word) that will follow this input.</p></li>
+<li><p>Transformers allow the LLM to understand things like: based on <em>ALL</em> the tokens I have seen, what should each token mean in this specific <em>context</em>.</p></li>
 </ul>
 </section>
 <section class="slide level2">
-<h2>Transformers</h2>
+<h2>3. Transformers</h2>
 <ul>
 <li><p>When I predict the next token, how much attention should the model pay to all the preceding tokens?</p></li>
-<li><p>Attention blocks in tranformer models allow all tokens to talk to each other.</p></li>
+<li><p>Attention blocks in transformer models allow all tokens to talk to each other.</p></li>
 <li><p>Within each Transformer block, the multi-head self-attention layer is what allows tokens to communicate with each other.</p></li>
 <li><p>Without it, each token would be processed in isolation. The FFN layers that follow operate per-token, so attention is the only mechanism for inter-token information flow.</p></li>
 </ul>
 </section>
 <section class="slide level2">
-<h2>Transformers</h2>
+<h2>3. Transformers</h2>
 <div style="font-size: 0.5em; text-align: center;">
 <p><em>Source: Cho et al.&nbsp;(2024). Transformer Explainer. IEEE VIS. — <a href="https://poloclub.github.io/transformer-explainer/" target="_blank">Click here</a></em></p>
 </div>
@@ -328,7 +397,7 @@ Ryan Singh
 </iframe>
 </section>
 <section class="slide level2">
-<h2>Transformers</h2>
+<h2>3. Transformers</h2>
 <p>Attention Is All You Need</p>
 <div class="columns">
 <div class="column" style="width:50%;">
@@ -344,15 +413,29 @@ Ryan Singh
 <section class="slide level2">
 <h2>The main take-aways</h2>
 <ul>
-<li><p>LLM’s are just recursively predicting the next token.</p></li>
-<li><p>Preceeding tokens dictate the output proba. By adding “OH,” probabbilty increases by double.</p></li>
+<li><p>LLMs are just recursively predicting the next token.</p></li>
+<li><p>Preceding tokens dictate the output probability. By adding “OH,” probability increases by double.</p></li>
 <li><p>Temp changes the probability distribution of the predicted tokens. Higher temp = more randomness.</p></li>
 </ul>
+<aside class="notes">
+<p>Notebook: run the temperature/softmax cell. Show how temp=0.3 concentrates probability (96% on top token) vs.&nbsp;temp=10 flattens it (36/33/31). This is the intuition behind all the temp settings we’ll use later.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
 <section class="slide level2">
 <h2>ChatGPT API</h2>
 <ul>
-<li><code>temperature=0</code>: most deterministic decoding (lowest randomness).</li>
+<li><code>temperature=0</code>: most deterministic. Use for evals, grading, data extraction — anywhere reproducibility matters. In SIGHT, our LLM-as-judge uses <code>temp=0</code> so the same question gets the same grade every run.</li>
+<li><code>temperature=0.7–1.0</code>: more creative, varied outputs. Use for brainstorming, marketing copy, conversational agents.</li>
 <li><code>max_tokens</code>: hard cap on generated output length.</li>
 <li><code>reasoning_effort</code>: controls how much internal reasoning budget is used.</li>
 <li>Tradeoff: higher quality often means more latency and cost.</li>
@@ -364,11 +447,24 @@ Ryan Singh
 <span id="cb2-5"><a href=""></a>    max_output_tokens<span class="op">=</span><span class="dv">120</span>,</span>
 <span id="cb2-6"><a href=""></a>    reasoning<span class="op">=</span>{<span class="st">"effort"</span>: <span class="st">"medium"</span>}</span>
 <span id="cb2-7"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<aside class="notes">
+<p>Key point: if you’re building anything auditable or reproducible, set temp=0. We’ll see this in the evals section — the LLM-as-judge always runs at temp=0. Code-along: run the softmax cell to see how temp changes the probability distribution.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
 <section class="slide level2">
 <h2>State of Open-Source LLMs</h2>
 <ul>
-<li>Strong families: Llama, Qwen, Mistral, DeepSeek, and domain-specific variants.</li>
+<li>Strong families: Gemma 3, Llama, Qwen, Mistral, DeepSeek, and domain-specific variants.</li>
 <li>Practical benefits: self-hosting, lower marginal cost, data residency control.</li>
 <li>Typical constraints: hardware needs, ops complexity, eval/finetune overhead.</li>
 <li>Common pattern: open-source for retrieval/structured steps, frontier API for hardest reasoning.</li>
@@ -380,11 +476,48 @@ Ryan Singh
 
 </section>
 <section class="slide level2">
+<h2>The Same Model, Two Very Different Answers</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<h3>Without Context</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href=""></a>response <span class="op">=</span> client.responses.create(</span>
+<span id="cb3-2"><a href=""></a>    model<span class="op">=</span><span class="st">"gpt-4.1-mini"</span>,</span>
+<span id="cb3-3"><a href=""></a>    <span class="bu">input</span><span class="op">=</span><span class="st">"What are the three software </span></span>
+<span id="cb3-4"><a href=""></a><span class="er">    safety modes on the UR5e cobot?",</span></span>
+<span id="cb3-5"><a href=""></a>    temperature<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb3-6"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<blockquote>
+<p>❌ The model will confidently list modes like “Safeguard,” “Emergency,” or “Automatic” — plausible-sounding but wrong.</p>
+</blockquote>
+</div><div class="column" style="width:50%;">
+<h3>With Retrieved Context</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href=""></a>context <span class="op">=</span> <span class="st">"""</span></span>
+<span id="cb4-2"><a href=""></a><span class="st">Some key excerpts from the UR5e manual</span></span>
+<span id="cb4-3"><a href=""></a><span class="st">"""</span></span>
+<span id="cb4-4"><a href=""></a></span>
+<span id="cb4-5"><a href=""></a>response <span class="op">=</span> client.responses.create(</span>
+<span id="cb4-6"><a href=""></a>    model<span class="op">=</span><span class="st">"gpt-4.1-mini"</span>,</span>
+<span id="cb4-7"><a href=""></a>    <span class="bu">input</span><span class="op">=</span><span class="ss">f"Answer using ONLY this context:</span></span>
+<span id="cb4-8"><a href=""></a><span class="er">    {context}</span></span>
+<span id="cb4-9"><a href=""></a>    </span>
+<span id="cb4-10"><a href=""></a>    Question: What are the three software </span>
+<span id="cb4-11"><a href=""></a>    safety modes on the UR5e cobot?<span class="st">",</span></span>
+<span id="cb4-12"><a href=""></a><span class="er">    temperature=0,</span></span>
+<span id="cb4-13"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<blockquote>
+<p>✅ Normal, Reduced, Recovery — grounded in the manual.</p>
+</blockquote>
+</div></div>
+<blockquote>
+<p>The model didn’t get smarter. We just gave it the right context. That’s RAG.</p>
+</blockquote>
+</section>
+<section class="slide level2">
 <h2>Grounding to the Truth</h2>
 <ul>
-<li><p>We know that Base LLM knowledge – especially smaller models – can be stale or incomplete. Demonstrated by the Miami Example.</p></li>
-<li><p>We also know that preceeding tokens play a pivital role. Prompting and context becomes important. Think back to the “Miami(OH),” example.</p></li>
-<li><p>I also assume that you know that giving your notes to an LLM as context and asking for a study guide is better than just asking for a study guide on a certain topic.</p></li>
+<li><p>We know that base LLM knowledge — especially smaller models — can be stale or incomplete. Ask a small model “Where is Miami University?” and it may say Florida.</p></li>
+<li><p>We also know that preceding tokens play a pivotal role. Add “Ohio” to the prompt and the answer changes entirely. Prompting and context matter.</p></li>
+<li><p>You probably already know that giving your notes to an LLM as context and asking for a study guide is better than just asking for a study guide on a certain topic.</p></li>
 </ul>
 <div class="callout callout-note no-icon callout-titled callout-style-default">
 <div class="callout-body">
@@ -392,10 +525,35 @@ Ryan Singh
 <p><strong>🤔 Question</strong></p>
 </div>
 <div class="callout-content">
-<p>Is there a way, everytime we ask LLM a question, it injects the right context into the prompt?</p>
+<p>Is there a way, every time we ask an LLM a question, it injects the right context into the prompt?</p>
 </div>
 </div>
 </div>
+</section>
+<section class="slide level2">
+<h2>Before Semantic Search</h2>
+<ul>
+<li><strong>Keyword / full-text search</strong> (TF-IDF, BM25): matches exact terms only. “gelatin silver print” never matches “black and white photo.”</li>
+<li><strong>SQL LIKE / regex</strong>: rigid, requires knowing the schema and exact vocabulary.</li>
+<li><strong>Manual tagging / taxonomy</strong>: humans hand-label every record. Expensive, inconsistent, doesn’t scale.</li>
+<li><strong>Boolean search</strong> (AND/OR/NOT): better than raw keyword, but still no understanding of meaning.</li>
+</ul>
+<blockquote>
+<p>These all break when data is messy, incomplete, or described inconsistently — which is most real-world data.</p>
+</blockquote>
+<aside class="notes">
+<p>Connect to the email example: keyword search for “shipping delay” misses emails that say “late delivery.” This is the gap that embeddings and vector search fill.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
 <section class="slide level2">
 <h2>Retrieval Patterns: SQL &amp; Vector</h2>
@@ -407,44 +565,66 @@ Ryan Singh
 </ul></li>
 <li><strong>Vector retrieval</strong> for semantic relevance:
 <ul>
-<li>semantic matching and fuzzy mathing</li>
+<li>semantic matching and fuzzy matching</li>
 <li>unstructured text</li>
 </ul></li>
 </ul>
-<div class="callout callout-none no-icon callout-style-simple">
+<div class="callout callout-note no-icon callout-titled callout-style-default">
 <div class="callout-body">
+<div class="callout-title">
+<p><strong>🤔 Question</strong></p>
+</div>
 <div class="callout-content">
-<p>Can you combine both in the same app?</p>
+<p>Say you are building a RAG system for all your emails you have received (50000+). When would you use SQL retrieval vs.&nbsp;vector retrieval?</p>
 </div>
 </div>
 </div>
+<aside class="notes">
+<p>Bring back the email example: SQL = “Show me all emails from client X in March.” Vector = “Find emails where customers complained about shipping delays” — even if the exact words differ.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
 <section class="slide level2">
 <h2>Minimal RAG Flow (Pseudo-code)</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href=""></a>query <span class="op">=</span> <span class="st">"What changed in the policy this quarter?"</span></span>
-<span id="cb3-2"><a href=""></a>hits <span class="op">=</span> retriever.search(query, top_k<span class="op">=</span><span class="dv">5</span>)</span>
-<span id="cb3-3"><a href=""></a>context <span class="op">=</span> <span class="st">"</span><span class="ch">\n\n</span><span class="st">"</span>.join([h[<span class="st">"text"</span>] <span class="cf">for</span> h <span class="kw">in</span> hits])</span>
-<span id="cb3-4"><a href=""></a>prompt <span class="op">=</span> <span class="ss">f"Answer using only this context:</span><span class="ch">\n</span><span class="sc">{</span>context<span class="sc">}</span><span class="ch">\n\n</span><span class="ss">Question: </span><span class="sc">{</span>query<span class="sc">}</span><span class="ss">"</span></span>
-<span id="cb3-5"><a href=""></a>answer <span class="op">=</span> llm(prompt)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href=""></a>query <span class="op">=</span> <span class="st">"What changed in the policy this quarter?"</span></span>
+<span id="cb5-2"><a href=""></a>hits <span class="op">=</span> retriever.search(query, top_k<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb5-3"><a href=""></a>context <span class="op">=</span> <span class="st">"</span><span class="ch">\n\n</span><span class="st">"</span>.join([h[<span class="st">"text"</span>] <span class="cf">for</span> h <span class="kw">in</span> hits])</span>
+<span id="cb5-4"><a href=""></a>prompt <span class="op">=</span> <span class="ss">f"Answer using only this context:</span><span class="ch">\n</span><span class="sc">{</span>context<span class="sc">}</span><span class="ch">\n\n</span><span class="ss">Question: </span><span class="sc">{</span>query<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb5-5"><a href=""></a>answer <span class="op">=</span> llm(prompt)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="slide level2">
-<h2>Vector Stores</h2>
+<h2>LangGraph in 30 Seconds</h2>
+<p>Think of LangGraph like a <strong>flowchart you can run</strong>.</p>
 <ul>
-<li>A vector store indexes embedding vectors alongside metadata for fast nearest-neighbor lookup.</li>
-<li>At query time, your question is embedded into the same vector space, and the store returns the closest matching chunks.</li>
-<li>Pre-filters (date, source, department) narrow the search space before similarity ranking runs.</li>
-<li>Chunk size, overlap, and reranking strategy directly affect recall and precision — these are tunable knobs.</li>
-<li>We will be using FAISS in our demo today. <sup>1</sup></li>
-<li>Other popular options include Pinecone, MongoDB, Chromas</li>
+<li>Each <strong>box</strong> (node) is a step: retrieve docs, call an LLM, run a SQL query.</li>
+<li>Each <strong>arrow</strong> (edge) says what happens next — and it can branch based on conditions.</li>
+<li>A <strong>shared clipboard</strong> (state) passes information between steps so each box knows what the previous one did.</li>
 </ul>
-<aside><ol class="aside-footnotes"><li id="fn2"><p>Johnson, J., Douze, M., &amp; Jégou, H. (2019). Billion-scale similarity search with GPUs. <em>IEEE Transactions on Big Data</em>, 7(3), 535–547. <a href="https://github.com/facebookresearch/faiss">github.com/facebookresearch/faiss</a></p></li></ol></aside></section>
-<section class="slide level2">
-<h2>Chunking Strategies</h2>
-<ul>
-<li>The way you split documents into chunks can make or break retrieval quality.</li>
-<li>For example, our museum data, each object is a point in the vector store. But if we are working with long documents, we might want to chunk them into sections or paragraphs.</li>
-<li>Overlap is important to preserve context across chunk boundaries. A common heuristic is 200-300 tokens of overlap, but this depends on your data and retrieval needs.</li>
-</ul>
+<blockquote>
+<p>If LangChain is a recipe (step 1, step 2, step 3), LangGraph is a <em>choose-your-own-adventure</em> book.</p>
+</blockquote>
+<aside class="notes">
+<p>Keep it simple here. The code-along has a two-node graph (retrieve → generate) that makes this concrete. The Appendix slides have TypedDict details for anyone who wants to go deeper.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
 <section class="slide level2">
 <h2>LangChain and LangGraph</h2>
@@ -453,9 +633,74 @@ Ryan Singh
 <li><strong>LangGraph</strong> extends this with stateful, graph-based workflows: define nodes, edges, and control flow for multi-step agentic pipelines.</li>
 <li>Rule of thumb: if your task is a single retrieval → generate pass, LangChain alone is fine. If you need branching, retries, or loops, reach for LangGraph.</li>
 </ul>
+<blockquote>
+<p>Think of these like <em>lego block</em> libraries for building LLM apps. They handle the nuisance code so you can focus on the architecture and logic of your application.</p>
+</blockquote>
 </section>
 <section class="slide level2">
-<h2>LangGraph: Stateful Agent Graphs</h2>
+<h2>RAG in Practice: Art Museum Search</h2>
+<p>This is the case we will be working with in the code-along.</p>
+<ul>
+<li>Curators had to write exact SQL queries to search the collection — but records were often incomplete, inconsistently tagged or missing metadata entirely.</li>
+<li>Exact-match SQL fails when the data is messy. A search for “black and white portrait photography” returns nothing if the record only says “gelatin silver print, 1940.”
+<ul>
+<li>Vector Embeddings capture semantic similarity, so the retriever can surface relevant records</li>
+</ul></li>
+<li>The goal: replace rigid SQL lookup with natural language retrieval.<sup>1</sup></li>
+</ul>
+<aside class="notes">
+<p>Switch to the code-along now and stay there through the RAG and Agents sections. Show the “without RAG vs.&nbsp;with RAG” cells first, then walk through vector store loading and retriever.invoke().</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+<aside><ol class="aside-footnotes"><li id="fn2"><p>Github Repo <em>RAG Omeka: Natural Language Retrieval for Art Museum Collections</em>. <a href="https://github.com/fryan2503/rag_omeka">github.com/fryan2503/rag_omeka</a></p></li></ol></aside></section>
+<section class="slide level2">
+<h2>Vector Stores</h2>
+<ul>
+<li>A vector store indexes embedding vectors alongside metadata for fast nearest-neighbor lookup.</li>
+<li>At query time, your question is embedded into the same vector space, and the store returns the closest matching chunks.</li>
+<li>Pre-filters (date, source, department) narrow the search space before similarity ranking runs.</li>
+<li>Chunk size, overlap, and reranking strategy directly affect recall and precision — these are tunable knobs.</li>
+<li>We will be using FAISS in our demo today. <sup>1</sup></li>
+<li>Other popular options include Pinecone, MongoDB, Chroma</li>
+</ul>
+<aside class="notes">
+<p>Notebook: show the FAISS load cell and run retriever.invoke(“Paul Cadmus”). Point out the metadata returned — this is what the LLM uses as context.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+<aside><ol class="aside-footnotes"><li id="fn3"><p>Johnson, J., Douze, M., &amp; Jégou, H. (2019). Billion-scale similarity search with GPUs. <em>IEEE Transactions on Big Data</em>, 7(3), 535–547. <a href="https://github.com/facebookresearch/faiss">github.com/facebookresearch/faiss</a></p></li></ol></aside></section>
+<section class="slide level2">
+<h2>Visualizing the Vector Store</h2>
+<iframe src="assets/vectorstore_3d.html" width="100%" height="600px" style="border:none;">
+</iframe>
+</section>
+<section class="slide level2">
+<h2>Chunking Strategies</h2>
+<ul>
+<li>The way you split documents into chunks can make or break retrieval quality.</li>
+<li>For example, in our museum data each object is a single point in the vector store. But if we are working with long documents, we might want to chunk them into sections or paragraphs.</li>
+<li>Overlap is important to preserve context across chunk boundaries. A common heuristic is 200-300 tokens of overlap, but this depends on your data and retrieval needs.</li>
+</ul>
+</section>
+<section class="slide level2">
+<h2>Appendix LangGraph: Stateful Agent Graphs</h2>
 <div class="columns">
 <div class="column" style="width:50%;">
 <ul>
@@ -465,19 +710,19 @@ Ryan Singh
 <li>This makes multi-step tasks debuggable and reproducible: you can inspect state at every node boundary.</li>
 </ul>
 </div><div class="column" style="width:50%;">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="" aria-hidden="true" tabindex="-1"></a>builder <span class="op">=</span> StateGraph(State)</span>
-<span id="cb4-2"><a href="" aria-hidden="true" tabindex="-1"></a><span class="co"># Nodes</span></span>
-<span id="cb4-3"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_node(<span class="st">"retrieve"</span>, retrieve)</span>
-<span id="cb4-4"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_node(<span class="st">"generate"</span>, generate)</span>
-<span id="cb4-5"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_node(<span class="st">"extract_keywords"</span>, extract_keywords)</span>
-<span id="cb4-6"><a href="" aria-hidden="true" tabindex="-1"></a><span class="co"># Edges</span></span>
-<span id="cb4-7"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(START, <span class="st">"extract_keywords"</span>)</span>
-<span id="cb4-8"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(<span class="st">"extract_keywords"</span>, <span class="st">"retrieve"</span>)</span>
-<span id="cb4-9"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(<span class="st">"retrieve"</span>, <span class="st">"generate"</span>)</span>
-<span id="cb4-10"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(<span class="st">"generate"</span>, END)</span>
-<span id="cb4-11"><a href="" aria-hidden="true" tabindex="-1"></a><span class="co"># Compile &amp; view</span></span>
-<span id="cb4-12"><a href="" aria-hidden="true" tabindex="-1"></a>graph <span class="op">=</span> builder.<span class="bu">compile</span>()</span>
-<span id="cb4-13"><a href="" aria-hidden="true" tabindex="-1"></a>display(Image(graph.get_graph().draw_mermaid_png()))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="" aria-hidden="true" tabindex="-1"></a>builder <span class="op">=</span> StateGraph(State)</span>
+<span id="cb6-2"><a href="" aria-hidden="true" tabindex="-1"></a><span class="co"># Nodes</span></span>
+<span id="cb6-3"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_node(<span class="st">"retrieve"</span>, retrieve)</span>
+<span id="cb6-4"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_node(<span class="st">"generate"</span>, generate)</span>
+<span id="cb6-5"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_node(<span class="st">"extract_keywords"</span>, extract_keywords)</span>
+<span id="cb6-6"><a href="" aria-hidden="true" tabindex="-1"></a><span class="co"># Edges</span></span>
+<span id="cb6-7"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(START, <span class="st">"extract_keywords"</span>)</span>
+<span id="cb6-8"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(<span class="st">"extract_keywords"</span>, <span class="st">"retrieve"</span>)</span>
+<span id="cb6-9"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(<span class="st">"retrieve"</span>, <span class="st">"generate"</span>)</span>
+<span id="cb6-10"><a href="" aria-hidden="true" tabindex="-1"></a>builder.add_edge(<span class="st">"generate"</span>, END)</span>
+<span id="cb6-11"><a href="" aria-hidden="true" tabindex="-1"></a><span class="co"># Compile &amp; view</span></span>
+<span id="cb6-12"><a href="" aria-hidden="true" tabindex="-1"></a>graph <span class="op">=</span> builder.<span class="bu">compile</span>()</span>
+<span id="cb6-13"><a href="" aria-hidden="true" tabindex="-1"></a>display(Image(graph.get_graph().draw_mermaid_png()))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-figure quarto-figure-center">
 <figure>
 <p><img data-src="pictures/rag_graph.png" class="quarto-figure quarto-figure-center" style="width:30.0%"></p>
@@ -486,21 +731,21 @@ Ryan Singh
 </div></div>
 </section>
 <section class="slide level2">
-<h2>State in LangGraph</h2>
+<h2>Appendix State in LangGraph</h2>
 <ul>
 <li>State is a <strong><code>TypedDict</code></strong> — a typed Python dict that every node in the graph can read and write to.</li>
 <li>Nodes return a <em>partial</em> dict with only the keys they want to update; LangGraph merges it back automatically.</li>
 <li><strong>Reducers</strong> control merge behavior per key. The default is last-write-wins, but <code>add_messages</code> appends instead — useful for building up a conversation history.</li>
 </ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href=""></a><span class="im">from</span> typing <span class="im">import</span> TypedDict, Annotated, List</span>
-<span id="cb5-2"><a href=""></a><span class="im">from</span> langchain_core.messages <span class="im">import</span> AnyMessage</span>
-<span id="cb5-3"><a href=""></a><span class="im">from</span> langgraph.graph.message <span class="im">import</span> add_messages</span>
-<span id="cb5-4"><a href=""></a></span>
-<span id="cb5-5"><a href=""></a><span class="kw">class</span> State(TypedDict):</span>
-<span id="cb5-6"><a href=""></a>    messages: Annotated[<span class="bu">list</span>[AnyMessage], add_messages]  <span class="co"># appends each turn</span></span>
-<span id="cb5-7"><a href=""></a>    question: <span class="bu">str</span>       <span class="co"># overwritten each call</span></span>
-<span id="cb5-8"><a href=""></a>    documents: List[<span class="bu">str</span>]</span>
-<span id="cb5-9"><a href=""></a>    generation: <span class="bu">str</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href=""></a><span class="im">from</span> typing <span class="im">import</span> TypedDict, Annotated, List</span>
+<span id="cb7-2"><a href=""></a><span class="im">from</span> langchain_core.messages <span class="im">import</span> AnyMessage</span>
+<span id="cb7-3"><a href=""></a><span class="im">from</span> langgraph.graph.message <span class="im">import</span> add_messages</span>
+<span id="cb7-4"><a href=""></a></span>
+<span id="cb7-5"><a href=""></a><span class="kw">class</span> State(TypedDict):</span>
+<span id="cb7-6"><a href=""></a>    messages: Annotated[<span class="bu">list</span>[AnyMessage], add_messages]  <span class="co"># appends each turn</span></span>
+<span id="cb7-7"><a href=""></a>    question: <span class="bu">str</span>       <span class="co"># overwritten each call</span></span>
+<span id="cb7-8"><a href=""></a>    documents: List[<span class="bu">str</span>]</span>
+<span id="cb7-9"><a href=""></a>    generation: <span class="bu">str</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="slide level2">
 <h2>LangGraph: Nodes and Edges</h2>
@@ -520,30 +765,14 @@ Ryan Singh
 <li><code>START</code> and <code>END</code> are built-in sentinels that mark entry and exit points</li>
 </ul>
 </div></div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href=""></a><span class="kw">def</span> retrieve(state: State) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
-<span id="cb6-2"><a href=""></a>    docs <span class="op">=</span> retriever.invoke(state[<span class="st">"question"</span>])</span>
-<span id="cb6-3"><a href=""></a>    <span class="cf">return</span> {<span class="st">"documents"</span>: docs}          <span class="co"># only updates 'documents'</span></span>
-<span id="cb6-4"><a href=""></a></span>
-<span id="cb6-5"><a href=""></a>builder.add_conditional_edges(</span>
-<span id="cb6-6"><a href=""></a>    <span class="st">"grade"</span>,</span>
-<span id="cb6-7"><a href=""></a>    <span class="kw">lambda</span> s: <span class="st">"generate"</span> <span class="cf">if</span> s[<span class="st">"relevant"</span>] <span class="cf">else</span> <span class="st">"retrieve"</span>,</span>
-<span id="cb6-8"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section class="slide level2">
-<h2>RAG in Practice: Art Museum Search</h2>
-<ul>
-<li>Curators had to write exact SQL queries to search the collection — but records were often incomplete, inconsistently tagged or missing metadata entirely.</li>
-<li>Exact-match SQL fails when the data is messy. A search for “black and white portrait photography” returns nothing if the record only says “gelatin silver print, 1940.”
-<ul>
-<li>Vector Embeddings capture semantic similarity, so the retriever can surface relevant records</li>
-</ul></li>
-<li>The goal: replace rigid SQL lookup with natural language retrieval.<sup>1</sup></li>
-</ul>
-<aside><ol class="aside-footnotes"><li id="fn3"><p>Github Repo <em>RAG Omeka: Natural Language Retrieval for Art Museum Collections</em>. <a href="https://github.com/fryan2503/rag_omeka">github.com/fryan2503/rag_omeka</a></p></li></ol></aside></section>
-<section class="slide level2">
-<h2>Visualizing the Vector Store</h2>
-<iframe src="assets/vectorstore_3d.html" width="100%" height="600px" style="border:none;">
-</iframe>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href=""></a><span class="kw">def</span> retrieve(state: State) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb8-2"><a href=""></a>    docs <span class="op">=</span> retriever.invoke(state[<span class="st">"question"</span>])</span>
+<span id="cb8-3"><a href=""></a>    <span class="cf">return</span> {<span class="st">"documents"</span>: docs}          <span class="co"># only updates 'documents'</span></span>
+<span id="cb8-4"><a href=""></a></span>
+<span id="cb8-5"><a href=""></a>builder.add_conditional_edges(</span>
+<span id="cb8-6"><a href=""></a>    <span class="st">"grade"</span>,</span>
+<span id="cb8-7"><a href=""></a>    <span class="kw">lambda</span> s: <span class="st">"generate"</span> <span class="cf">if</span> s[<span class="st">"relevant"</span>] <span class="cf">else</span> <span class="st">"retrieve"</span>,</span>
+<span id="cb8-8"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section class="slide level2">
 <h2>NotebookLM Is a RAG App</h2>
@@ -553,6 +782,19 @@ Ryan Singh
 <li>It answers with source-grounded context.</li>
 <li>This is RAG behavior, wrapped in a consumer-friendly interface.</li>
 </ul>
+<aside class="notes">
+<p>Good transition point. Summarize: we just built in code exactly what NotebookLM does under the hood — embed docs, retrieve relevant chunks, generate grounded answers.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section></section>
 <section>
 <section class="title-slide slide level1 section-slide center" data-background-image="pictures/sb_audi.jpg" data-background-size="cover" data-background-opacity="0.35">
@@ -562,7 +804,7 @@ Ryan Singh
 <section class="slide level2">
 <h2>Agency</h2>
 <ul>
-<li>an agent is an LLM that can autonomously take actions in a loop (tool use, code execution, web browsing), plan multi-step tasks, and course-correct based on feedback</li>
+<li>An agent is an LLM that can autonomously take actions in a loop (tool use, code execution, web browsing), plan multi-step tasks, and course-correct based on feedback</li>
 <li>Agentic behavior is useful when tasks require multi-step decisions.</li>
 </ul>
 </section>
@@ -585,26 +827,35 @@ Ryan Singh
 <ul>
 <li>MCP standardizes how models discover and use external tools/context.</li>
 <li>Think of it as a common interface between model runtimes and tool servers.</li>
-<li>Before USB C and Thunderbolt, every device had its own weird plug. MCP is the USB C of model-tool integration.</li>
-<li>That’s what AI tool integration was like before MCP — every tool (Slack, Google Drive, Notion) needed its own custom integration code.</li>
+<li>Before USB-C, every device had its own weird plug. MCP is the USB-C of model-tool integration.</li>
+<li>Before MCP, every tool (Slack, Google Drive, Notion) needed its own custom integration code.</li>
+<li>Real-world MCP servers already exist for: Slack (search channels), GitHub (read PRs), Postgres (run queries), file system (read/write files).</li>
 </ul>
 </section>
 <section class="slide level2">
 <h2>MCP Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href=""></a><span class="co"># MCP Server: expose a tool</span></span>
-<span id="cb7-2"><a href=""></a><span class="at">@server.list_tools</span>()</span>
-<span id="cb7-3"><a href=""></a><span class="cf">async</span> <span class="kw">def</span> list_tools():</span>
-<span id="cb7-4"><a href=""></a>    <span class="cf">return</span> [Tool(name<span class="op">=</span><span class="st">"get_weather"</span>, inputSchema<span class="op">=</span>{...})]</span>
-<span id="cb7-5"><a href=""></a></span>
-<span id="cb7-6"><a href=""></a><span class="at">@server.call_tool</span>()</span>
-<span id="cb7-7"><a href=""></a><span class="cf">async</span> <span class="kw">def</span> call_tool(name, arguments):</span>
-<span id="cb7-8"><a href=""></a>    <span class="cf">return</span> get_weather(arguments[<span class="st">"city"</span>])</span>
-<span id="cb7-9"><a href=""></a></span>
-<span id="cb7-10"><a href=""></a><span class="co"># MCP Client: discover and use it</span></span>
-<span id="cb7-11"><a href=""></a>tools <span class="op">=</span> <span class="cf">await</span> session.list_tools()        <span class="co"># "What can you do?"</span></span>
-<span id="cb7-12"><a href=""></a>result <span class="op">=</span> <span class="cf">await</span> session.call_tool(         <span class="co"># "Do this thing"</span></span>
-<span id="cb7-13"><a href=""></a>    <span class="st">"get_weather"</span>, {<span class="st">"city"</span>: <span class="st">"Cincinnati"</span>}</span>
-<span id="cb7-14"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href=""></a><span class="co"># MCP Server: expose a tool</span></span>
+<span id="cb9-2"><a href=""></a><span class="at">@server.list_tools</span>()</span>
+<span id="cb9-3"><a href=""></a><span class="cf">async</span> <span class="kw">def</span> list_tools():</span>
+<span id="cb9-4"><a href=""></a>    <span class="cf">return</span> [Tool(name<span class="op">=</span><span class="st">"get_weather"</span>, inputSchema<span class="op">=</span>{...})]</span>
+<span id="cb9-5"><a href=""></a></span>
+<span id="cb9-6"><a href=""></a><span class="at">@server.call_tool</span>()</span>
+<span id="cb9-7"><a href=""></a><span class="cf">async</span> <span class="kw">def</span> call_tool(name, arguments):</span>
+<span id="cb9-8"><a href=""></a>    <span class="cf">return</span> get_weather(arguments[<span class="st">"city"</span>])</span>
+<span id="cb9-9"><a href=""></a></span>
+<span id="cb9-10"><a href=""></a><span class="co"># MCP Client: discover and use it</span></span>
+<span id="cb9-11"><a href=""></a>tools <span class="op">=</span> <span class="cf">await</span> session.list_tools()        <span class="co"># "What can you do?"</span></span>
+<span id="cb9-12"><a href=""></a>result <span class="op">=</span> <span class="cf">await</span> session.call_tool(         <span class="co"># "Do this thing"</span></span>
+<span id="cb9-13"><a href=""></a>    <span class="st">"get_weather"</span>, {<span class="st">"city"</span>: <span class="st">"Cincinnati"</span>}</span>
+<span id="cb9-14"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section class="slide level2">
+<h2>MCP: Explore the Spec</h2>
+<ul>
+<li>MCP is an open standard — browse the full spec and available integrations below.</li>
+</ul>
+<iframe src="https://modelcontextprotocol.io/introduction" width="100%" height="550px" style="border:none;">
+</iframe>
 </section>
 <section class="slide level2">
 <h2>Auto Research — Recursive Agent Example</h2>
@@ -690,21 +941,34 @@ Ryan Singh
 <h2>LLM as a Judge</h2>
 <ul>
 <li>Use a strong model to score outputs against a rubric.</li>
-<li>LLM’s are really good at spotting incosistencies between 2 given texts.</li>
+<li>LLMs are really good at spotting inconsistencies between 2 given texts.</li>
 <li>Two criteria we’ll use:
 <ul>
 <li><strong>Helpfulness</strong>: Is the answer relevant and concise?</li>
 <li><strong>Correctness</strong>: Does it match the gold answer factually? This is more important.</li>
 </ul></li>
 <li>Watch for judge bias and rubric leakage.</li>
-<li>There has been instances if the LLM knows it is being graded, it will try to cheat on the test or won’t take it seriously. <sup>1</sup></li>
+<li>There have been instances where an LLM knows it is being graded and will try to cheat on the test or won’t take it seriously. <sup>1</sup></li>
 </ul>
+<aside class="notes">
+<p>Notebook: show the golden set JSON (10 questions, mix of deterministic and non-deterministic). Then run the eval loop and show the helpfulness/correctness results table. Remind them temp=0 is used here for reproducibility.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 <aside><ol class="aside-footnotes"><li id="fn5"><p>Claude Opus cheating on browsecomp <a href="https://www.anthropic.com/engineering/eval-awareness-browsecomp">Eval awareness in Claude Opus</a></p></li></ol></aside></section>
 <section class="slide level2">
-<h2>Golden Set (How We did it for the research project)</h2>
+<h2>Golden Set (How We Did It for the Research Project)</h2>
 <ol type="1">
 <li>We had a team of 8 students, professors and phd candidates manually curate a set of 100 questions related to machinery, like a CNC lathe or Mill.</li>
-<li>Our questions were non-determinitic only.</li>
+<li>Our questions were non-deterministic only.</li>
 <li>Each question was sent to a subject matter expert (SME) for revision. We had a safety consultant review all the questions.</li>
 </ol>
 </section>
@@ -712,10 +976,47 @@ Ryan Singh
 <h2>Continuous Evals</h2>
 <ul>
 <li>Notice the like/dislike buttons on ChatGPT responses? Those are user feedback signals that feed into OpenAI’s eval system.</li>
-<li>Also i’m sure you notice the A/B tests now too</li>
+<li>Also, I’m sure you notice the A/B tests now too.</li>
 <li>This is a good way to understand where the Agent failed and how to improve it.</li>
 <li>For example, if users consistently dislike responses to a certain question, that signals a weakness in the retrieval or generation for that query type. You can then add more examples of that question type to your eval set and iterate on improving it.</li>
 </ul>
+<aside class="notes">
+<p>Final takeaway: evals are never done. The golden set is your starting point, but production feedback (thumbs up/down, A/B tests) is the continuous loop. Think of it like the email company — you keep adding failure cases to your eval set as users find edge cases.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section class="slide level2">
+<h2>What to Try Next</h2>
+<ul>
+<li><strong>BUILD BUILD BUILD</strong> there is no substitute for hands-on experience. Use coding agents in a code.</li>
+<li><strong>Fork the code-along</strong> and swap in your own data (emails, reports, tickets).</li>
+<li><strong>Look at cool projects</strong>: https://github.com/kyrolabs/awesome-langchain and https://streamlit.io/gallery</li>
+</ul>
+<blockquote>
+<p>The best way to learn this stuff is to build something small and iterate.</p>
+</blockquote>
+<aside class="notes">
+<p>Tie it together: we started with tokens, built up to RAG, added agents, and evaluated the whole thing. The email example showed why it matters. The art museum showed how to build it. Now go build your own.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 
 </section></section>
 
